@@ -21,7 +21,10 @@ jobs:
             cd /www/wwwroot/docker/jp-cloud-script
             # 确保服务器上已经克隆了代码，并且有权限拉取
             # 如果是首次部署，需要在服务器上手动执行 git clone
-            git pull origin main
+            
+            # 强制重置为远程仓库状态（解决本地文件冲突）
+            git fetch origin
+            git reset --hard origin/main
             
             # 重建并重启容器
             docker compose up -d --build
