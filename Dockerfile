@@ -14,7 +14,10 @@ RUN npm install
 COPY . .
 
 # Ensure SDK is built
-RUN cd src/libs/jpy-sdk && npm install && npm run build
+RUN cd src/libs/jpy-sdk && \
+    npm config set registry https://registry.npmmirror.com/ && \
+    npm install && \
+    npm run build
 
 RUN npm run build
 

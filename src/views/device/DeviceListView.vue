@@ -368,7 +368,7 @@ const fetchCloudFiles = async () => {
         const res = await sdkStore.sdk.cloudCtl.list({});
         // Filter apk files if possible, but backend list doesn't seem to support filter.
         // Client side filter:
-        cloudFileList.value = (res || []).filter(f => f.fileName.toLowerCase().endsWith('.apk'));
+        cloudFileList.value = (res || []).filter((f: any) => f.fileName.toLowerCase().endsWith('.apk'));
     } catch (e) {
         ElMessage.error('Failed to fetch cloud files');
     } finally {
