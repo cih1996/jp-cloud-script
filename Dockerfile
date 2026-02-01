@@ -1,11 +1,14 @@
 # Build stage
-FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/node:20-alpine as build-stage
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/node:22-alpine as build-stage
 
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm config set registry https://registry.npmmirror.com/
+RUN npm config set registry https://registry.npmmirror.com/ && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000
 RUN npm install
 
 COPY . .

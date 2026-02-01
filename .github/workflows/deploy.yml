@@ -1,0 +1,51 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 129.204.22.176
+          port: 28591
+          username: cih1996
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /www/wwwroot/docker/jp-cloud-script
+            # 确保服务器上已经克隆了代码，并且有权限拉取
+            # 如果是首次部署，需要在服务器上手动执行 git clone
+            git pull origin main
+            
+            # 重建并重启容器
+            docker compose up -d --build
+            
+            # 清理未使用的镜像（可选）
+            docker image prune -f
+
+      - name: Notify Lark Success
+        if: success()
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMITTER: ${{ github.actor }}
+        run: |
+          # 对 commit message 进行转义
+          ESCAPED_MSG=$(echo "$COMMIT_MSG" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{\"msg_type\":\"text\",\"content\":{\"text\":\"金鹏云平台脚本调试平台\n作者：$COMMITTER\n更新内容：\n $ESCAPED_MSG\"}}" \
+            https://open.larksuite.com/open-apis/bot/v2/hook/9c98e0ac-7365-47b3-9b62-95a4d0d578dc
+
+      - name: Notify Lark Failure
+        if: failure()
+        env:
+          COMMITTER: ${{ github.actor }}
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{\"msg_type\":\"text\",\"content\":{\"text\":\"❌金鹏云平台脚本调试平台构建失败\n作者：$COMMITTER\n失败原因：请查看 GitHub Actions 日志\"}}" \
+            https://open.larksuite.com/open-apis/bot/v2/hook/9c98e0ac-7365-47b3-9b62-95a4d0d578dc
