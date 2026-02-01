@@ -3,6 +3,6 @@ services:
   web:
     build: .
     ports:
-      - "2002:80"
+      - "20002:80"
     restart: always
     container_name: jpy-cloud-script-web
