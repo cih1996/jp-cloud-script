@@ -1,0 +1,8 @@
+name: jpy-cloud-script
+services:
+  web:
+    build: .
+    ports:
+      - "2002:80"
+    restart: always
+    container_name: jpy-cloud-script-web
