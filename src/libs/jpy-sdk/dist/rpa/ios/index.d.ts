@@ -1,0 +1,30 @@
+import { RPAClient } from '../rpaClient.js';
+import { IOSDeviceModule } from './device.js';
+import { IOSAppModule } from './app.js';
+import { IOSInputModule } from './input.js';
+import { IOSFileModule } from './file.js';
+import { IOSScreenModule } from './screen.js';
+import { IOSAutomationModule } from './automation.js';
+import { IOSSystemModule } from './system.js';
+export { IOSDeviceModule } from './device.js';
+export { IOSAppModule } from './app.js';
+export { IOSInputModule } from './input.js';
+export { IOSFileModule } from './file.js';
+export { IOSScreenModule } from './screen.js';
+export { IOSAutomationModule } from './automation.js';
+export { IOSSystemModule } from './system.js';
+export type { TouchPoint } from './input.js';
+export type { ScreenshotOptions } from './screen.js';
+export type { GetImageFromCacheOptions, FindColorOptions, FindImageOptions, OCROptions } from './automation.js';
+export type { HttpRequestOptions } from './system.js';
+export declare class IOSClient {
+    readonly device: IOSDeviceModule;
+    readonly app: IOSAppModule;
+    readonly input: IOSInputModule;
+    readonly file: IOSFileModule;
+    readonly screen: IOSScreenModule;
+    readonly automation: IOSAutomationModule;
+    readonly system: IOSSystemModule;
+    private connection;
+    constructor(connection: RPAClient);
+}

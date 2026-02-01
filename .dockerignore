@@ -1,5 +1,6 @@
 node_modules
 dist
+!src/libs/jpy-sdk/dist
 .git
 .gitignore
 docker-compose.yml

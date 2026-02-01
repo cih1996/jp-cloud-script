@@ -13,11 +13,10 @@ RUN npm install
 
 COPY . .
 
-# Ensure SDK is built
+# Ensure SDK dependencies are installed (dist should be included via .dockerignore exception)
 RUN cd src/libs/jpy-sdk && \
     npm config set registry https://registry.npmmirror.com/ && \
-    npm install && \
-    npm run build
+    npm install
 
 RUN npm run build
 
