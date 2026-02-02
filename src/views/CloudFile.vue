@@ -150,7 +150,7 @@ const handleCopyLink = async (row: ListRes) => {
     if (baseUrl && !baseUrl.endsWith('/')) {
         finalUrl += '/';
     }
-    finalUrl += row.fileName;
+    finalUrl += row.hash;
 
     await navigator.clipboard.writeText(finalUrl);
     ElMessage.success('Link copied to clipboard: ' + finalUrl);

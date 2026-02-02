@@ -72,5 +72,21 @@ export const localService = {
         });
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
         return await res.json();
+    },
+
+    async updateConfig(wsUrl: string) {
+        try {
+            const res = await fetch(`${BASE_URL}/api/config/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ wsUrl })
+            });
+            if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+            return await res.json();
+        } catch (e) {
+            console.warn('Failed to update local service config:', e);
+            // Non-blocking failure, as local service might not be running
+            return null;
+        }
     }
 };

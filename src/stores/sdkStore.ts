@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import { ElMessage } from 'element-plus'
 import { JpySdk, type LoginUserEntity } from '@sdk/index'
+import { localService } from '@/api/localService'
 
 interface SdkState {
   sdk: JpySdk | null
@@ -22,16 +23,28 @@ export const useSdkStore = defineStore('sdk', {
     async initSdk(host?: string) {
       if (this.sdk && this.sdk.conn && !this.sdk.conn.isClosed) return
 
-      // Use provided host or default
-      // If host is provided, construct URL
+      // Use provided host or stored host or default
       let wsUrl = 'wss://minio.accjs.cn/ws'
-      if (host) {
+      
+      // Try to get host from storage if not provided
+      const storedHost = localStorage.getItem('jpy_ws_host')
+      const targetHost = host || storedHost
+
+      if (targetHost) {
         // Remove protocol and path if user accidentally added them (simple cleanup)
-        let cleanHost = host.replace(/^wss?:\/\//, '').replace(/\/ws$/, '').replace(/\/$/, '')
+        let cleanHost = targetHost.replace(/^wss?:\/\//, '').replace(/\/ws$/, '').replace(/\/$/, '')
         wsUrl = `wss://${cleanHost}/ws`
       }
 
       console.log(`Connecting to ${wsUrl}`)
+      
+      // Update local service config (fire and forget)
+      localService.updateConfig(wsUrl).then(res => {
+        if (res) console.log('Local service config updated')
+      }).catch(err => {
+        console.warn('Local service config update skipped:', err)
+      })
+
       this.sdk = new JpySdk(wsUrl)
       
       // Listen for connection open
@@ -82,6 +95,12 @@ export const useSdkStore = defineStore('sdk', {
           this.user = user
           this.apiKey = secretKey
           localStorage.setItem('jpy_api_key', secretKey)
+          
+          // Save host if provided (extract from current sdk url or input)
+          if (host) {
+             localStorage.setItem('jpy_ws_host', host)
+          }
+          
           ElMessage.success('Login Successful')
           return true
         } else {
@@ -98,10 +117,22 @@ export const useSdkStore = defineStore('sdk', {
       this.user = null
       this.apiKey = ''
       localStorage.removeItem('jpy_api_key')
-      // Optional: Close connection or reset SDK
-      // this.sdk?.close()
-      // this.sdk = null
-      window.location.reload() // Simple way to reset state
+      localStorage.removeItem('jpy_ws_host') // Optional: clear host on logout? Maybe better to keep it.
+      // For now, let's keep the host so user doesn't have to re-enter it.
+      // But if user explicitly logs out, maybe they want to switch servers?
+      // Let's NOT clear it for now, as it's just a preference.
+      // Actually, user said "auto logout on refresh", which is bad.
+      // Explicit logout usually means "I'm done" or "Switch user".
+      
+      // window.location.reload() // Simple way to reset state
+      // Instead of reload, let's just clear state and redirect if needed
+      if (this.sdk) {
+        this.sdk.close()
+        this.sdk = null
+      }
+      this.isConnected = false
+      // Reload is effective for full reset
+      window.location.reload()
     }
   },
 

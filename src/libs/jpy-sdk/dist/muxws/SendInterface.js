@@ -6,6 +6,17 @@ function toHex(buffer) {
     return Array.from(buffer).map(b => b.toString(16).padStart(2, '0')).join(' ');
 }
 export class SendInterface {
+    static addDebugListener(listener) {
+        this.debugListeners.push(listener);
+    }
+    emitDebug(type, data, label) {
+        try {
+            SendInterface.debugListeners.forEach(l => l(type, data, label));
+        }
+        catch (e) {
+            console.error("Debug listener error", e);
+        }
+    }
     constructor(conn) {
         this.callId = 1;
         this.call = {};
@@ -69,6 +80,13 @@ export class SendInterface {
                                 // Little Endian ID
                                 const callback = data[1] | (data[2] << 8) | (data[3] << 16) | (data[4] << 24);
                                 const dataStr = utf8Decoder.decode(data.slice(5));
+                                try {
+                                    const parsed = JSON.parse(dataStr);
+                                    that.emitDebug('ws-push', parsed, `callback-${callback}`);
+                                }
+                                catch (e) {
+                                    that.emitDebug('ws-push', { raw: dataStr }, `callback-${callback}`);
+                                }
                                 that.onDataFun(callback, dataStr);
                                 break;
                             }
@@ -163,6 +181,7 @@ export class SendInterface {
             fun: method,
             data: data
         };
+        this.emitDebug('ws-send', reqData, `${app}/${method}`);
         const jsonStr = JSON.stringify(reqData);
         console.log(`[SDK-DEBUG] sendFun Payload: ${jsonStr}`);
         const buf = textEncoder.encode(jsonStr);
@@ -170,6 +189,7 @@ export class SendInterface {
         const responseStr = utf8Decoder.decode(responseBuf);
         try {
             const res = JSON.parse(responseStr);
+            this.emitDebug('ws-recv', res, `${app}/${method}`);
             if (res.code !== 200) { // Assuming 200 is success
                 // You might want to throw error if code != 200 or return structure
                 // Adjust based on actual API contract
@@ -177,7 +197,9 @@ export class SendInterface {
             return res.data; // Usually return res.data or res
         }
         catch (e) {
+            this.emitDebug('ws-recv', { raw: responseStr }, `${app}/${method}`);
             return responseStr; // Return raw string if not JSON
         }
     }
 }
+SendInterface.debugListeners = [];

@@ -394,7 +394,7 @@ const handleCloudFileSelect = async (row: ListRes | undefined) => {
              if (!baseUrl.endsWith('/')) {
                  finalUrl += '/';
              }
-             finalUrl += row.fileName;
+             finalUrl += row.hash;
              
              downloadForm.value.url = finalUrl;
              downloadForm.value.name = row.fileName;

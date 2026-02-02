@@ -20,7 +20,7 @@ const checkStatus = async () => {
 
 onMounted(() => {
   checkStatus();
-  timer = window.setInterval(checkStatus, 5000);
+  timer = window.setInterval(checkStatus, 15000);
 });
 
 onUnmounted(() => {

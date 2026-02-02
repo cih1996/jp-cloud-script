@@ -674,8 +674,7 @@ const loadDevices = async () => {
     try {
         const res = await sdkStore.sdk.userDeviceCtl.getUserDeviceList({
              pageNum: 1,
-             pageSize: 9999,
-             yunjiUserGroupId: 0
+             pageSize: 9999
         });
         if (res && res.records) {
             allDevices.value = res.records;
