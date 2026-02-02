@@ -43,6 +43,11 @@ const router = createRouter({
           path: 'rpa',
           name: 'rpa',
           component: () => import('@/views/RpaView.vue')
+        },
+        {
+          path: 'unified-test',
+          name: 'unifiedTest',
+          component: () => import('@/views/test/UnifiedTestView.vue')
         }
       ]
     }

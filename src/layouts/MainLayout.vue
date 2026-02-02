@@ -24,6 +24,10 @@
           <el-icon><VideoPlay /></el-icon>
           <span>{{ $t('menu.rpa') }}</span>
         </el-menu-item>
+        <el-menu-item index="/unified-test">
+          <el-icon><Connection /></el-icon>
+          <span>{{ $t('menu.unifiedTest') }}</span>
+        </el-menu-item>
       </el-menu>
       
       <ServiceStatus />
@@ -81,7 +85,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSdkStore } from '@/stores/sdkStore'
 import { useI18n } from 'vue-i18n'
-import { Monitor, ArrowDown } from '@element-plus/icons-vue'
+import { Monitor, ArrowDown, Files, VideoPlay, Connection } from '@element-plus/icons-vue'
 import ServiceStatus from '@/components/ServiceStatus.vue'
 
 const route = useRoute()
