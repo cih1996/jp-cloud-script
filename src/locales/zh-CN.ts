@@ -265,6 +265,8 @@ export default {
     lat: '纬度',
     lng: '经度',
     hideApp: '隐藏应用',
-    isHide: '是否隐藏'
+    isHide: '是否隐藏',
+    getDeviceDetail: '获取设备详情',
+    getDeviceStatus: '获取设备状态'
   }
 }

@@ -246,6 +246,8 @@ export default {
     lat: 'Lat',
     lng: 'Lng',
     hideApp: 'Hide App',
-    isHide: 'Hide?'
+    isHide: 'Hide?',
+    getDeviceDetail: 'Get Device Detail',
+    getDeviceStatus: 'Get Device Status'
   }
 }

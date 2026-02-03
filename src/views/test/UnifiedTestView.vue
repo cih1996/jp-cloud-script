@@ -66,6 +66,28 @@
               </el-form>
             </el-tab-pane>
 
+            <el-tab-pane :label="$t('testView.getDeviceDetail')" name="getDeviceDetail">
+              <el-form label-width="100px">
+                <el-form-item :label="$t('testView.deviceId')">
+                  <el-input-number v-model="formData.deviceId" :min="1" />
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="sendGeneric('getDeviceDetail')">{{ $t('testView.send') }}</el-button>
+                </el-form-item>
+              </el-form>
+            </el-tab-pane>
+
+            <el-tab-pane :label="$t('testView.getDeviceStatus')" name="getDeviceStatus">
+              <el-form label-width="100px">
+                <el-form-item :label="$t('testView.deviceId')">
+                  <el-input-number v-model="formData.deviceId" :min="1" />
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="sendGeneric('getDeviceStatus')">{{ $t('testView.send') }}</el-button>
+                </el-form-item>
+              </el-form>
+            </el-tab-pane>
+
             <el-tab-pane :label="$t('testView.hideApp')" name="hideApp">
               <el-form label-width="100px">
                 <el-form-item :label="$t('testView.deviceId')">
@@ -351,6 +373,12 @@ const sendGeneric = (type: string) => {
         break
       case 'startApp':
         data = { deviceId: formData.deviceId, packageName: formData.packageName }
+        break
+      case 'getDeviceDetail':
+        data = { deviceId: formData.deviceId }
+        break
+      case 'getDeviceStatus':
+        data = { deviceId: formData.deviceId }
         break
       case 'getAppList':
         data = { deviceId: formData.tbDeviceId }
