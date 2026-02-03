@@ -1,4 +1,5 @@
 
+<!-- 设备列表视图组件 -->
 <template>
   <div class="device-list">
     <el-card class="app-card" shadow="never">
@@ -67,6 +68,18 @@
             <span class="mono-text font-medium">{{ scope.row.deviceId }}</span>
             <el-tag v-if="hasPortMapping(scope.row.deviceId, 9009)" size="small" type="success" effect="dark" class="ml-2">RPA</el-tag>
             <el-tag v-if="hasPortMapping(scope.row.deviceId, 5555)" size="small" type="warning" effect="dark" class="ml-2">ADB</el-tag>
+            <el-tag 
+              v-for="port in getOtherMappings(scope.row.deviceId)" 
+              :key="port" 
+              size="small" 
+              type="info" 
+              effect="dark" 
+              class="ml-2"
+              closable
+              @close="handleStopCustomTunnel(port)"
+            >
+              {{ port }}
+            </el-tag>
           </template>
         </el-table-column>
         <!-- UUID Removed as per request -->
@@ -99,9 +112,18 @@
             <el-button link type="primary" size="small" @click="openInspector(scope.row)">
               {{ $t('device.inspect') }}
             </el-button>
-            <el-button link type="primary" size="small" @click="openS5Config(scope.row)">
+            <el-button 
+                 link 
+                 size="small" 
+                 :type="hasPortMapping(scope.row.deviceId, 19011) ? 'success' : 'primary'"
+                 :loading="devModeLoading[scope.row.deviceId]"
+                 @click="toggleDevMode(scope.row)"
+             >
+               {{ $t('device.devMode') }}
+             </el-button>
+            <!-- <el-button link type="primary" size="small" @click="openS5Config(scope.row)">
               S5
-            </el-button>
+            </el-button> -->
             <el-button 
               link 
               type="primary" 
@@ -125,6 +147,7 @@
                   <el-dropdown-item command="changeOs" divided>{{ $t('device.changeOs') }}</el-dropdown-item>
                   <el-dropdown-item command="rootGrant">{{ $t('device.rootGrant') }}</el-dropdown-item>
                   <el-dropdown-item command="rootRevoke">{{ $t('device.rootRevoke') }}</el-dropdown-item>
+                  <el-dropdown-item command="customTunnel" divided>{{ $t('device.customTunnel') }}</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -271,6 +294,22 @@
       :device-ids="changeOsDeviceIds"
       @success="handleChangeOsSuccess"
     />
+
+    <!-- Custom Tunnel Dialog -->
+    <el-dialog v-model="customTunnelVisible" :title="$t('customTunnel.title')" width="400px">
+        <el-form :model="customTunnelForm" label-position="top">
+            <el-form-item :label="$t('customTunnel.localPort')">
+                <el-input v-model="customTunnelForm.localPort" :placeholder="$t('customTunnel.localPortPlaceholder')" />
+            </el-form-item>
+            <el-form-item :label="$t('customTunnel.remotePort')">
+                <el-input v-model="customTunnelForm.remotePort" :placeholder="$t('customTunnel.remotePortPlaceholder')" />
+            </el-form-item>
+        </el-form>
+        <template #footer>
+            <el-button @click="customTunnelVisible = false">{{ $t('common.cancel') }}</el-button>
+            <el-button type="primary" @click="confirmCustomTunnel">{{ $t('customTunnel.start') }}</el-button>
+        </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -295,6 +334,8 @@ const {
   connectionStatus, 
   startTunnel, 
   stopTunnel,
+  startCustomTunnel,
+  stopCustomTunnel,
   checkActiveTunnels,
   deviceMappings
 } = useDeviceTunnel()
@@ -325,6 +366,63 @@ const downloadForm = ref({
     install: true
 })
 const currentDevice = ref<any>(null)
+
+const customTunnelVisible = ref(false)
+const customTunnelForm = ref({
+    localPort: '',
+    remotePort: ''
+})
+
+const handleCustomTunnel = (row: any) => {
+    currentDevice.value = row;
+    customTunnelForm.value = { localPort: '', remotePort: '' };
+    customTunnelVisible.value = true;
+}
+
+const confirmCustomTunnel = async () => {
+    if (!currentDevice.value) return;
+    const local = parseInt(customTunnelForm.value.localPort);
+    const remote = parseInt(customTunnelForm.value.remotePort);
+    
+    if (isNaN(local) || isNaN(remote)) {
+        ElMessage.warning('Invalid ports');
+        return;
+    }
+    
+    await startCustomTunnel(currentDevice.value, local, remote);
+    customTunnelVisible.value = false;
+}
+
+const handleStopCustomTunnel = async (port: number) => {
+    try {
+        await ElMessageBox.confirm(
+            `Stop mapping on local port ${port}?`,
+            'Confirm Stop',
+            {
+                confirmButtonText: 'Stop',
+                cancelButtonText: 'Cancel',
+                type: 'warning',
+            }
+        )
+        await stopCustomTunnel(port);
+        ElMessage.success(`Stopped mapping on port ${port}`);
+    } catch {
+        // Cancelled
+    }
+}
+
+const toggleDevMode = async (device: any) => {
+    devModeLoading.value[device.deviceId] = true;
+    try {
+        if (hasPortMapping(device.deviceId, 19011)) {
+            await handleStopCustomTunnel(19011);
+        } else {
+            await startCustomTunnel(device, 19011, 19011);
+        }
+    } finally {
+        devModeLoading.value[device.deviceId] = false;
+    }
+}
 
 const handleCommand = async (cmd: string, row: any) => {
     currentDevice.value = row;
@@ -357,6 +455,9 @@ const handleCommand = async (cmd: string, row: any) => {
             break;
         case 'rootRevoke':
             await handleRoot(row, 517, 'Revoke Root');
+            break;
+        case 'customTunnel':
+            handleCustomTunnel(row);
             break;
     }
 }
@@ -568,6 +669,8 @@ const s5Form = ref({
   s5Info: ''
 })
 
+const devModeLoading = ref<Record<number, boolean>>({})
+
 const isTunnelLoading = (row: any) => {
   return isConnecting.value && activeDeviceId.value === row.deviceId
 }
@@ -645,13 +748,7 @@ const openInspector = (row: any) => {
   router.push(`/device/${row.deviceId}/inspect`)
 }
 
-const openS5Config = (row: any) => {
-  s5Form.value = {
-    deviceId: row.deviceId,
-    s5Info: row.deviceInfo?.s5info || ''
-  }
-  s5ConfigVisible.value = true
-}
+
 
 const saveS5Config = async () => {
   if (!sdkStore.sdk) return
@@ -708,6 +805,11 @@ const handleCurrentChange = (val: number) => {
 
 const hasPortMapping = (deviceId: number, port: number) => {
   return deviceMappings.value?.[deviceId]?.includes(port)
+}
+
+const getOtherMappings = (deviceId: number) => {
+    const ports = deviceMappings.value?.[deviceId] || [];
+    return ports.filter(p => p !== 9009 && p !== 5555);
 }
 
 onMounted(() => {

@@ -1,5 +1,6 @@
 
 export default {
+  appName:"Jpy Cloud Script",
   common: {
     login: 'Login',
     logout: 'Logout',
@@ -44,6 +45,7 @@ export default {
     tunnel: 'Tunnel',
     stopTunnel: 'Stop Tunnel',
     inspect: 'Inspect',
+    devMode: 'Dev Mode',
     more: 'More',
     screenshot: 'Screenshot',
     shell: 'Shell Command',
@@ -51,7 +53,20 @@ export default {
     startApp: 'Start App',
     download: 'Download & Install',
     rootGrant: 'Root Grant',
-    rootRevoke: 'Root Revoke'
+    rootRevoke: 'Root Revoke',
+    changeOs: 'Change OS',
+    customTunnel: 'Custom Mapping'
+  },
+  customTunnel: {
+    title: 'Custom Port Mapping',
+    localPort: 'Local Port',
+    remotePort: 'Remote Port',
+    start: 'Start Mapping',
+    stop: 'Stop Mapping',
+    success: 'Mapping Success',
+    failed: 'Mapping Failed',
+    localPortPlaceholder: 'e.g., 8080',
+    remotePortPlaceholder: 'e.g., 80'
   },
   tunnel: {
     restored: 'Tunnel Restored',

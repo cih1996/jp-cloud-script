@@ -1,4 +1,4 @@
-
+<!-- 修改系统信息 (改机) 配置模拟态 -->
 <template>
   <el-dialog
     v-model="visible"

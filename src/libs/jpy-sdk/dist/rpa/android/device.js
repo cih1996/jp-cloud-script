@@ -40,6 +40,12 @@ export class AndroidDeviceModule extends BaseAndroidModule {
         return this.executeShell('su -c "setprop service.adb.tcp.port 5555 && stop adbd && start adbd && settings put global adb_enabled 1"');
     }
     /**
+     * 关闭ADB Wifi调试
+     */
+    async disableAdbWifi() {
+        return this.executeShell('su -c "setprop service.adb.tcp.port -1 && stop adbd && settings put global adb_enabled 0"');
+    }
+    /**
      * 297 息屏
      * @param timeLong 持续时间(秒)，默认1年(31536000)
      */

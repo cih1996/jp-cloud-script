@@ -1,3 +1,4 @@
+<!-- 调试日志输出面板 -->
 <template>
   <div v-if="store.isOpen" class="debug-panel">
     <div class="debug-header">

@@ -25,6 +25,10 @@ export declare class AndroidDeviceModule extends BaseAndroidModule {
      */
     enableAdbWifi(): Promise<any>;
     /**
+     * 关闭ADB Wifi调试
+     */
+    disableAdbWifi(): Promise<any>;
+    /**
      * 297 息屏
      * @param timeLong 持续时间(秒)，默认1年(31536000)
      */

@@ -1,3 +1,4 @@
+<!-- 设备检查器视图组件 -->
 <template>
   <div class="inspector-view">
     <div class="toolbar">

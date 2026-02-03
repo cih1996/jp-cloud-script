@@ -1,3 +1,9 @@
+/**
+ * RPA任务执行组合式函数
+ * 用于管理RPA任务的执行状态和日志
+ * Date: 2026-2-1
+ * Author: Cih1996
+ */
 import { ref } from 'vue';
 import { useSdkStore } from '@/stores/sdkStore';
 import { localService } from '@/api/localService';

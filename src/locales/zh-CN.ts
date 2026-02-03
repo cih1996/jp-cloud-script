@@ -1,5 +1,6 @@
 
 export default {
+  appName:"金鹏云平台脚本",
   common: {
     login: '登录',
     logout: '退出',
@@ -44,6 +45,7 @@ export default {
     tunnel: '隧道',
     stopTunnel: '停止隧道',
     inspect: '调试',
+    devMode: '开发模式',
     more: '更多',
     screenshot: '屏幕截图',
     shell: 'Shell 命令',
@@ -52,7 +54,19 @@ export default {
     download: '下载安装',
     rootGrant: 'Root 授权',
     rootRevoke: '撤销 Root',
-    changeOs: '改机'
+    changeOs: '改机',
+    customTunnel: '自定义映射'
+  },
+  customTunnel: {
+    title: '自定义端口映射',
+    localPort: '本地端口',
+    remotePort: '远程端口',
+    start: '开启映射',
+    stop: '关闭映射',
+    success: '映射成功',
+    failed: '映射失败',
+    localPortPlaceholder: '例如: 8080',
+    remotePortPlaceholder: '例如: 80'
   },
   tunnel: {
     restored: '隧道已恢复',

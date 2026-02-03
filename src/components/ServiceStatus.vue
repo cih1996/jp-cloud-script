@@ -1,3 +1,4 @@
+<!-- 左侧底部服务连接状态显示组件 -->
 <template>
   <div class="service-status">
     <div class="status-indicator" :class="{ connected: isConnected }"></div>

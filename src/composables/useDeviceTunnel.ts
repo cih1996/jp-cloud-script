@@ -1,3 +1,9 @@
+/**
+ * 设备隧道管理组合式函数 (映射端口和打洞)
+ * 用于管理设备端口映射和连接状态
+ * Date: 2026-2-1
+ * Author: Cih1996
+ */
 import { ref } from 'vue';
 import { useSdkStore } from '@/stores/sdkStore';
 import { localService } from '@/api/localService';
@@ -62,6 +68,14 @@ export function useDeviceTunnel() {
 
     const stopTunnel = async () => {
         try {
+            if (androidClient) {
+                try {
+                    await androidClient.device.disableAdbWifi();
+                } catch (e) {
+                    console.warn("Failed to disable ADB Wifi", e);
+                }
+            }
+
             if (rpaClient) {
                 rpaClient.Close();
                 rpaClient = null;
@@ -208,9 +222,54 @@ export function useDeviceTunnel() {
         }
     };
 
+    const startCustomTunnel = async (device: any, localPort: number, remotePort: number) => {
+        try {
+            if (!sdkStore.apiKey) throw new Error(t('tunnel.apiKeyMissing'));
+
+            const res = await localService.connect({
+                key: sdkStore.apiKey,
+                deviceId: device.deviceId,
+                tbYunJiUserDeviceId: device.tbYunJiUserDeviceId || 0,
+                localPort: localPort,
+                phonePort: remotePort
+            });
+
+            if (!res.success) throw new Error(res.message || t('tunnel.mappingFailed', { port: localPort }));
+
+            ElNotification.success({
+                title: t('customTunnel.success'),
+                message: `${localPort} -> ${remotePort}`,
+                duration: 3000
+            });
+            
+            await checkActiveTunnels();
+        } catch (e: any) {
+            console.error(e);
+            ElMessage.error(t('customTunnel.failed') + `: ${e.message}`);
+        }
+    };
+
+    const stopCustomTunnel = async (localPort: number) => {
+        try {
+            if (!sdkStore.apiKey) throw new Error(t('tunnel.apiKeyMissing'));
+            
+            await localService.disconnect({
+                key: sdkStore.apiKey,
+                localPort: localPort
+            });
+            
+            await checkActiveTunnels();
+        } catch (e: any) {
+            console.error("Stop custom tunnel error", e);
+            ElMessage.error(e.message);
+        }
+    };
+
     return {
         startTunnel,
         stopTunnel,
+        startCustomTunnel,
+        stopCustomTunnel,
         checkActiveTunnels,
         isConnecting,
         activeDeviceId,

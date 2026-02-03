@@ -1,10 +1,17 @@
 
+<!-- 
+  主布局组件
+  包含左侧导航栏、顶部标题栏和主要内容区域
+-->
 <template>
   <el-container class="layout-container">
     <el-aside width="260px" class="aside">
       <div class="logo-container">
         <div class="logo-icon">C</div>
-        <span class="logo-text">Cloud Console</span>
+        <div class="logo-content">
+          <span class="logo-text">{{ $t('appName') }}</span>
+          <span class="host-text" v-if="currentHost" :title="currentHost">{{ currentHost }}</span>
+        </div>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -93,6 +100,8 @@ const router = useRouter()
 const sdkStore = useSdkStore()
 const { locale } = useI18n()
 
+const currentHost = computed(() => localStorage.getItem('last_host') || '')
+
 const activeMenu = computed(() => route.path)
 const currentLang = computed(() => locale.value)
 
@@ -171,6 +180,22 @@ const handleLangCommand = (lang: string) => {
   font-weight: 700;
   color: #111827;
   letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.logo-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.host-text {
+  font-size: 11px;
+  color: #9ca3af;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .el-menu-vertical {
