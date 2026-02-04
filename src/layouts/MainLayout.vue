@@ -121,6 +121,7 @@ const handleLangCommand = (lang: string) => {
 .layout-container {
   height: 100vh;
   background-color: #f3f4f6;
+  overflow: hidden; /* Fix layout overflow */
 }
 
 .header-right {

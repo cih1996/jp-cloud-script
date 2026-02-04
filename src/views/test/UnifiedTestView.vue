@@ -20,9 +20,9 @@
     </el-card>
 
     <div class="main-content">
-      <el-row :gutter="20" style="height: calc(100vh - 200px);">
+      <div class="content-flex-container">
         <!-- Left Column: Function Tabs -->
-        <el-col :span="8" style="height: 100%;">
+        <div class="left-panel">
           <el-tabs tab-position="left" v-model="activeTab" style="height: 100%;" class="function-tabs">
             <el-tab-pane :label="$t('testView.login')" name="login">
               <div class="action-panel">
@@ -154,10 +154,50 @@
             </el-tab-pane>
 
             <el-tab-pane :label="$t('testView.changePhones')" name="changePhones">
-              <el-input type="textarea" v-model="changePhoneData" :rows="15" />
-              <div class="mt-2">
-                <el-button type="primary" @click="sendChangePhones">{{ $t('testView.sendChangePhones') }}</el-button>
-              </div>
+              <el-form label-width="120px" :model="changePhoneForm">
+                <el-form-item :label="$t('testView.deviceId')">
+                  <el-input-number v-model="changePhoneForm.deviceId" :min="1" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.category')">
+                  <el-input v-model="changePhoneForm.category" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.bs')">
+                  <el-input v-model="changePhoneForm.bs" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.operator')">
+                  <el-input v-model="changePhoneForm.operator" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.timezone')">
+                  <el-input v-model="changePhoneForm.timezone" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.language')">
+                  <el-input v-model="changePhoneForm.language" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.version')">
+                  <el-input v-model="changePhoneForm.version" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.country')">
+                  <el-input v-model="changePhoneForm.country" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.operatorName')">
+                  <el-input v-model="changePhoneForm.operatorName" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.mcc')">
+                  <el-input v-model="changePhoneForm.mcc" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.mnc')">
+                  <el-input v-model="changePhoneForm.mnc" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.msisdn')">
+                  <el-input v-model="changePhoneForm.msisdn" />
+                </el-form-item>
+                <el-form-item :label="$t('changeOs.smsc')">
+                  <el-input v-model="changePhoneForm.smsc" />
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="sendChangePhones">{{ $t('testView.sendChangePhones') }}</el-button>
+                </el-form-item>
+              </el-form>
             </el-tab-pane>
 
             <el-tab-pane :label="$t('testView.getTaskStatus')" name="getTaskStatus">
@@ -231,11 +271,18 @@
               </el-form>
             </el-tab-pane>
 
+            <el-tab-pane :label="$t('rpa.customJson')" name="customJson">
+              <el-input type="textarea" v-model="formData.customJson" :rows="10" />
+              <div class="mt-2">
+                <el-button type="primary" @click="sendGeneric('customJson')">{{ $t('testView.send') }}</el-button>
+              </div>
+            </el-tab-pane>
+
           </el-tabs>
-        </el-col>
+        </div>
 
         <!-- Right Column: Logs -->
-        <el-col :span="16" style="height: 100%;">
+        <div class="right-panel">
           <el-card class="log-card" style="height: 100%; display: flex; flex-direction: column;">
             <template #header>
               <div class="card-header">
@@ -253,8 +300,8 @@
               </div>
             </div>
           </el-card>
-        </el-col>
-      </el-row>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -289,23 +336,7 @@ onMounted(() => {
   }
 })
 
-const changePhoneData = ref(JSON.stringify([
-  {
-    "deviceId": 21323,
-    "category": "491",
-    "bs": "wifi",
-    "operator": "00",
-    "timezone": "America/New_York",
-    "language": "en-US",
-    "version": "491",
-    "country": "us",
-    "operatorName": "AmeriLink",
-    "mcc": "310",
-    "mnc": "630",
-    "msisdn": "",
-    "smsc": ""
-  }
-], null, 2))
+
 
 
 const formData = reactive({
@@ -325,7 +356,24 @@ const formData = reactive({
   downloadName: '',
   downloadUrl: 'https://example.com/app.apk',
   downloadSha256: '',
-  downloadInstall: true
+  downloadInstall: true,
+  customJson: '{"type": "your_custom_type", "data": {}}'
+})
+
+const changePhoneForm = reactive({
+  deviceId: 21323,
+  category: "491",
+  bs: "wifi",
+  operator: "00",
+  timezone: "America/New_York",
+  language: "en-US",
+  version: "491",
+  country: "us",
+  operatorName: "AmeriLink",
+  mcc: "310",
+  mnc: "630",
+  msisdn: "",
+  smsc: ""
 })
 
 const addLog = (type: 'send' | 'recv' | 'sys', data: any) => {
@@ -395,6 +443,40 @@ const sendGeneric = (type: string) => {
         break
       case 'getS5outLine':
         data = { deviceId: formData.deviceId }
+        break
+      case 'customJson':
+        try {
+          const parsed = JSON.parse(formData.customJson)
+          let customType = type
+          let customData: any = {}
+          let extra: any = {}
+
+          if (parsed.type) {
+             customType = parsed.type
+          }
+
+          if (parsed.seq !== undefined) {
+             extra['seq'] = parsed.seq
+          }
+
+          if (parsed.data !== undefined) {
+             customData = parsed.data
+          } else {
+             // If no explicit 'data' field, use the remaining properties
+             const remainder = { ...parsed }
+             delete remainder.type
+             delete remainder.seq
+             if (Object.keys(remainder).length > 0) {
+                customData = remainder
+             }
+          }
+          
+          send(customType, customData, extra)
+          return
+        } catch(e) {
+           ElMessage.error('Invalid JSON')
+           return
+        }
         break
       case 'getUserFiles':
         data = { fileName: formData.fileName }
@@ -499,10 +581,12 @@ const sendGetDeviceList = () => {
 
 const sendChangePhones = () => {
   try {
-    const data = JSON.parse(changePhoneData.value)
+    const data = [{
+      ...changePhoneForm
+    }]
     send('Changephones', data, { req: true })
   } catch (e) {
-    ElMessage.error('Invalid JSON')
+    ElMessage.error('Invalid Data')
   }
 }
 
@@ -515,7 +599,7 @@ onUnmounted(() => {
 <style scoped>
 .unified-test-view {
   padding: 20px;
-  height: 100vh;
+  height: 100%; /* Changed from 100vh to 100% to fit in MainLayout */
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -546,6 +630,24 @@ onUnmounted(() => {
 .main-content {
   flex-grow: 1;
   overflow: hidden;
+}
+
+.content-flex-container {
+  display: flex;
+  height: 100%;
+  gap: 20px;
+}
+
+.left-panel {
+  flex: 0 0 630px; /* Fixed width 630px */
+  height: 100%;
+  overflow: hidden;
+}
+
+.right-panel {
+  flex: 1; /* Adaptive width */
+  height: 100%;
+  min-width: 0; /* Prevent overflow */
 }
 
 .function-tabs {
