@@ -15,9 +15,16 @@
         <el-form-item :label="$t('testView.wsUrl')">
           <el-input v-model="wsUrl" style="width: 300px" />
         </el-form-item>
+        <el-form-item label="Heartbeat">
+          <el-switch v-model="heartbeatEnabled" />
+        </el-form-item>
+        <el-form-item label="Interval(ms)">
+          <el-input-number v-model="heartbeatIntervalMs" :min="1000" :step="1000" />
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="connect" :disabled="isConnected">{{ $t('testView.connect') }}</el-button>
           <el-button type="danger" @click="disconnect" :disabled="!isConnected">{{ $t('testView.disconnect') }}</el-button>
+          <el-button @click="sendHeartbeat" :disabled="!isConnected">Ping</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -310,7 +317,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted, reactive, nextTick, onMounted } from 'vue'
+import { ref, onUnmounted, reactive, nextTick, onMounted, watch } from 'vue'
 
 import { useSdkStore } from '@/stores/sdkStore'
 import { ElMessage } from 'element-plus'
@@ -319,6 +326,8 @@ const wsUrl = ref('ws://127.0.0.1:1001/api/unified/ws')
 const isConnected = ref(false)
 const token = ref('')
 const activeTab = ref('login')
+const heartbeatEnabled = ref(true)
+const heartbeatIntervalMs = ref(30000)
 
 const sdkStore = useSdkStore()
 
@@ -331,6 +340,7 @@ const logs = ref<LogItem[]>([])
 const logContainer = ref<HTMLElement | null>(null)
 
 let ws: WebSocket | null = null
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null
 
 // Initialize token from sdkStore
 onMounted(() => {
@@ -338,8 +348,6 @@ onMounted(() => {
     token.value = sdkStore.apiKey
   }
 })
-
-
 
 
 const formData = reactive({
@@ -516,12 +524,14 @@ const connect = () => {
       isConnected.value = true
       ElMessage.success('Connected')
       addLog('sys', `Connected to ${wsUrl.value}`)
+      startHeartbeat()
     }
     
     ws.onclose = () => {
       isConnected.value = false
       ElMessage.warning('Disconnected')
       addLog('sys', 'Disconnected')
+      stopHeartbeat()
     }
     
     ws.onerror = (err) => {
@@ -548,7 +558,37 @@ const disconnect = () => {
     ws.close()
     ws = null
   }
+  stopHeartbeat()
 }
+
+const startHeartbeat = () => {
+  stopHeartbeat()
+  if (!heartbeatEnabled.value) {
+    return
+  }
+  heartbeatTimer = setInterval(() => {
+    sendHeartbeat()
+  }, heartbeatIntervalMs.value)
+}
+
+const stopHeartbeat = () => {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer)
+    heartbeatTimer = null
+  }
+}
+
+const sendHeartbeat = () => {
+  send('Ping')
+}
+
+watch([heartbeatEnabled, heartbeatIntervalMs, isConnected], () => {
+  if (isConnected.value) {
+    startHeartbeat()
+  } else {
+    stopHeartbeat()
+  }
+})
 
 const send = (type: string, data: any = null, extra: any = {}) => {
   if (!ws || !isConnected.value) {
