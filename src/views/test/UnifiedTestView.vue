@@ -1,3 +1,6 @@
+<!-- 
+  接口调用调试面板 
+-->
 <template>
   <div class="unified-test-view">
     <!-- Top Connection Bar -->
@@ -345,7 +348,7 @@ const formData = reactive({
   shell: 'ls -l',
   packageName: '',
   s5Url: 'socks5://user:pass@1.2.3.4:1080',
-  nOutSwID: 0,
+  nOutSwID: 11211,
   fileName: '',
   lat: 0,
   lng: 0,

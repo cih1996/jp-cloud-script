@@ -14,10 +14,15 @@ export const useDebugStore = defineStore('debug', {
   state: () => ({
     logs: [] as LogEntry[],
     maxLogs: 1000,
-    isOpen: false
+    isOpen: false,
+    isUnifiedLogStreaming: false
   }),
 
   actions: {
+    setUnifiedLogStreaming(status: boolean) {
+      this.isUnifiedLogStreaming = status
+    },
+    
     addLog(type: LogEntry['type'], data: any, method: string = '') {
       const id = Date.now() + Math.random()
       const timestamp = new Date().toLocaleTimeString()

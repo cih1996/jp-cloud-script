@@ -121,9 +121,9 @@
              >
                {{ $t('device.devMode') }}
              </el-button>
-            <!-- <el-button link type="primary" size="small" @click="openS5Config(scope.row)">
+            <el-button link type="primary" size="small" @click="openS5Config(scope.row)">
               S5
-            </el-button> -->
+            </el-button>
             <el-button 
               link 
               type="primary" 
@@ -276,23 +276,16 @@
       </template>
     </el-dialog>
 
-    <!-- S5 Config Dialog -->
-    <el-dialog v-model="s5ConfigVisible" title="Configure S5 Proxy" width="500px">
-      <el-form :model="s5Form" label-position="top">
-        <el-form-item label="S5 Info (IP:Port:User:Pass)">
-          <el-input v-model="s5Form.s5Info" placeholder="e.g. 192.168.1.1:1080:user:pass" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="s5ConfigVisible = false">{{ $t('common.cancel') }}</el-button>
-        <el-button type="primary" @click="saveS5Config" :loading="s5Saving">{{ $t('common.confirm') }}</el-button>
-      </template>
-    </el-dialog>
-
     <ChangeOsDialog 
       v-model="changeOsVisible" 
       :device-ids="changeOsDeviceIds"
       @success="handleChangeOsSuccess"
+    />
+
+    <S5ConfigDialog
+      v-model="s5ConfigVisible"
+      :device-id="s5DeviceId"
+      @success="handleS5Success"
     />
 
     <!-- Custom Tunnel Dialog -->
@@ -322,6 +315,7 @@ import { localService } from '@/api/localService'
 import { ElMessage, ElTable, ElMessageBox, ElLoading } from 'element-plus'
 import { Refresh, Search, VideoPlay, UploadFilled, ArrowDown, MagicStick } from '@element-plus/icons-vue'
 import ChangeOsDialog from '@/components/ChangeOsDialog.vue'
+import S5ConfigDialog from '@/components/S5ConfigDialog.vue'
 import { useI18n } from 'vue-i18n'
 import type { ListRes } from '@sdk/index'
 
@@ -663,11 +657,7 @@ const batchRunVisible = ref(false)
 const selectedScript = ref('')
 
 const s5ConfigVisible = ref(false)
-const s5Saving = ref(false)
-const s5Form = ref({
-  deviceId: 0,
-  s5Info: ''
-})
+const s5DeviceId = ref(0)
 
 const devModeLoading = ref<Record<number, boolean>>({})
 
@@ -748,25 +738,13 @@ const openInspector = (row: any) => {
   router.push(`/device/${row.deviceId}/inspect`)
 }
 
+const openS5Config = (row: any) => {
+  s5DeviceId.value = row.deviceId
+  s5ConfigVisible.value = true
+}
 
-
-const saveS5Config = async () => {
-  if (!sdkStore.sdk) return
-  s5Saving.value = true
-  try {
-    await sdkStore.sdk.userDeviceCtl.configS5({
-      deviceId: s5Form.value.deviceId,
-      s5Info: s5Form.value.s5Info
-    })
-    ElMessage.success("S5 Proxy configured successfully")
-    s5ConfigVisible.value = false
-    fetchDevices()
-  } catch (error) {
-    console.error("Config S5 error", error)
-    ElMessage.error("Failed to configure S5 Proxy")
-  } finally {
-    s5Saving.value = false
-  }
+const handleS5Success = () => {
+  fetchDevices()
 }
 
 const handleBatchChangeOs = () => {

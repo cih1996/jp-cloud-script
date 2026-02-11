@@ -1,5 +1,6 @@
 import { sleep } from "./Conn.js";
 import { TcpType } from "./TcpType.js";
+import { ungzip } from 'pako';
 const textEncoder = new TextEncoder();
 const utf8Decoder = new TextDecoder('utf-8');
 function toHex(buffer) {
@@ -27,7 +28,6 @@ export class SendInterface {
         this.onClose = () => { };
         this.conn = conn;
         const that = this;
-        console.log("[SDK-DEBUG] SendInterface initialized (Version: 2026-01-29 12:00)");
         // Reader loop
         (async function () {
             try {
@@ -36,35 +36,69 @@ export class SendInterface {
                     await conn.readFull(headerBuf);
                     // Little Endian length
                     const len = headerBuf[0] | (headerBuf[1] << 8) | (headerBuf[2] << 16) | (headerBuf[3] << 24);
-                    console.log(`[SDK-DEBUG] Received Header: ${toHex(headerBuf)}, ParsedLen=${len}`);
                     const data = new Uint8Array(len);
                     await conn.readFull(data);
-                    console.log(`[SDK-DEBUG] Received Data Body (${len} bytes): ${toHex(data)}`);
                     try {
                         const ml = data[0];
+                        console.log(`[SDK-DEBUG] 接收数据类型：${ml}`);
                         switch (ml) {
+                            case TcpType.TcpType_GzipRtext:
+                            case TcpType.TcpType_GzipRCommand:
                             case TcpType.TcpType_RText:
                             case TcpType.TcpType_RCommand: {
                                 // Little Endian ID
                                 const callback = data[1] | (data[2] << 8) | (data[3] << 16) | (data[4] << 24);
-                                console.log(`[SDK-DEBUG] Received Response. Type=${ml}, ID=${callback}. Registered Callbacks:`, Object.keys(that.call));
-                                if (that.call[callback]) {
-                                    console.log(`[SDK-DEBUG] Invoking callback for ID=${callback}`);
-                                    that.call[callback](data.slice(5));
+                                console.log(`[SDK-DEBUG] 接收响应. Type=${ml}, ID=${callback}. 已注册回调:`, Object.keys(that.call));
+                                // Print data payload
+                                let payload = data.slice(5);
+                                // GZIP Detection & Decompression
+                                let gzipOffset = -1;
+                                let needsDecompression = (ml === TcpType.TcpType_GzipRtext || ml === TcpType.TcpType_GzipRCommand);
+                                if (needsDecompression) {
+                                    // For explicit Gzip types, the payload starts at 0 (relative to slice(5))
+                                    gzipOffset = 0;
                                 }
                                 else {
-                                    console.error(`[SDK-DEBUG] Unknown callback ID ${callback}. Available:`, Object.keys(that.call));
+                                    // For normal types, check for magic bytes just in case (as per previous logic)
+                                    for (let i = 0; i < payload.length && i < 32; i++) {
+                                        if (i + 1 < payload.length && payload[i] === 0x1f && payload[i + 1] === 0x8b) {
+                                            gzipOffset = i;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (gzipOffset !== -1) {
+                                    try {
+                                        const compressed = payload.slice(gzipOffset);
+                                        const decompressed = ungzip(compressed);
+                                        console.log(`[SDK-DEBUG] GZIP解压成功, Type=${ml}, Offset=${gzipOffset}, 原始大小=${payload.length}, 解压后=${decompressed.length}`);
+                                        payload = decompressed;
+                                    }
+                                    catch (e) {
+                                        console.error(`[SDK-DEBUG] GZIP解压失败:`, e);
+                                    }
+                                }
+                                const payloadStr = utf8Decoder.decode(payload);
+                                console.log(`[SDK-DEBUG] 响应数据 (String): ${payloadStr}`);
+                                console.log(`[SDK-DEBUG] 响应数据 (Hex): ${toHex(payload)}`);
+                                if (that.call[callback]) {
+                                    console.log(`[SDK-DEBUG] 调用回调函数 ID=${callback}`);
+                                    that.call[callback](payload);
+                                }
+                                else {
+                                    console.error(`[SDK-DEBUG] 未知回调ID ${callback}. 已注册:`, Object.keys(that.call));
                                 }
                                 break;
                             }
                             case TcpType.TcpType_Pong: {
                                 // Little Endian ID
                                 const callback = data[1] | (data[2] << 8) | (data[3] << 16) | (data[4] << 24);
+                                console.log(`[SDK-DEBUG] 收到 Pong 响应. ID=${callback}`);
                                 if (that.call[callback]) {
                                     that.call[callback](data.slice(5));
                                 }
                                 else {
-                                    console.error("Unknown callback ID (Pong)", callback);
+                                    console.error(`[SDK-DEBUG] 未知回调 ID (Pong) ${callback}`);
                                 }
                                 break;
                             }
@@ -95,12 +129,12 @@ export class SendInterface {
                         }
                     }
                     catch (e) {
-                        console.error("Packet processing error", e);
+                        console.error("处理数据错误", e);
                     }
                 }
             }
             catch (e) {
-                // console.error("Read loop error", e);
+                // console.error("读取循环错误", e);
                 conn.close();
                 that.onClose(e);
             }
@@ -150,16 +184,16 @@ export class SendInterface {
             const finalBuf = new Uint8Array(4 + packetLen);
             finalBuf.set(frameHeader);
             finalBuf.set(packet, 4);
-            console.log(`[SDK-DEBUG] Sending Packet: Type=${type}, ID=${id}, DataLen=${data.length}, PacketLen=${packetLen}`);
-            console.log(`[SDK-DEBUG] FrameHeader (LittleEndian): ${toHex(frameHeader)}`);
-            console.log(`[SDK-DEBUG] Packet Body: ${toHex(packet)}`);
+            // console.log(`[SDK-DEBUG] Sending Packet: Type=${type}, ID=${id}, DataLen=${data.length}, PacketLen=${packetLen}`);
+            // console.log(`[SDK-DEBUG] FrameHeader (LittleEndian): ${toHex(frameHeader)}`);
+            // console.log(`[SDK-DEBUG] Packet Body: ${toHex(packet)}`);
             const timer = setTimeout(() => {
                 delete this.call[id];
-                reject(new Error("Request timeout"));
+                reject(new Error("请求超时"));
             }, timeout);
-            console.log(`[SDK-DEBUG] Registering callback for ID=${id}`);
+            console.log(`[SDK-DEBUG] 注册回调函数 ID=${id}`);
             this.call[id] = (response) => {
-                console.log(`[SDK-DEBUG] Callback triggered for ID=${id}`);
+                console.log(`[SDK-DEBUG] 回调函数触发 ID=${id}`);
                 clearTimeout(timer);
                 delete this.call[id];
                 resolve(response);
@@ -183,17 +217,14 @@ export class SendInterface {
         };
         this.emitDebug('ws-send', reqData, `${app}/${method}`);
         const jsonStr = JSON.stringify(reqData);
-        console.log(`[SDK-DEBUG] sendFun Payload: ${jsonStr}`);
+        console.log(`[SDK-DEBUG] 发送数据: ${jsonStr}`);
         const buf = textEncoder.encode(jsonStr);
         const responseBuf = await this._sendByte(TcpType.TcpType_Text, buf);
         const responseStr = utf8Decoder.decode(responseBuf);
+        console.log(`[SDK-DEBUG] 接收数据: ${responseStr}`);
         try {
             const res = JSON.parse(responseStr);
             this.emitDebug('ws-recv', res, `${app}/${method}`);
-            if (res.code !== 200) { // Assuming 200 is success
-                // You might want to throw error if code != 200 or return structure
-                // Adjust based on actual API contract
-            }
             return res.data; // Usually return res.data or res
         }
         catch (e) {

@@ -6,4 +6,6 @@ export var TcpType;
     TcpType[TcpType["TcpType_RCommand"] = 54] = "TcpType_RCommand";
     TcpType[TcpType["TcpType_Ping"] = 55] = "TcpType_Ping";
     TcpType[TcpType["TcpType_Pong"] = 56] = "TcpType_Pong";
+    TcpType[TcpType["TcpType_GzipRCommand"] = 50] = "TcpType_GzipRCommand";
+    TcpType[TcpType["TcpType_GzipRtext"] = 49] = "TcpType_GzipRtext";
 })(TcpType || (TcpType = {}));

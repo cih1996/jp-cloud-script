@@ -29,7 +29,21 @@ export default {
     dev: 'Script Dev',
     cloudFile: 'Cloud Files',
     rpa: 'RPA',
-    unifiedTest: 'Unified Test'
+    unifiedTest: 'Unified Test',
+    logs: 'System Logs'
+  },
+  logs: {
+    title: 'System Logs',
+    download: 'Download Logs',
+    clear: 'Clear',
+    empty: 'No logs available',
+    start: 'Start Streaming',
+    stop: 'Stop Streaming'
+  },
+  s5: {
+    title: 'S5 Proxy Config',
+    s5Url: 'S5 URL (socks5://user:pass@host:port)',
+    outLine: 'Exit Line'
   },
   device: {
     deviceId: 'Device ID',

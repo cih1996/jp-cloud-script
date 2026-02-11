@@ -29,7 +29,21 @@ export default {
     dev: '脚本开发',
     cloudFile: '云文件管理',
     rpa: 'RPA',
-    unifiedTest: '统一测试'
+    unifiedTest: '统一测试',
+    logs: '系统日志'
+  },
+  logs: {
+    title: '系统日志',
+    download: '下载日志',
+    clear: '清空',
+    empty: '暂无日志',
+    start: '开启实时日志',
+    stop: '暂停实时日志'
+  },
+  s5: {
+    title: 'S5 代理配置',
+    s5Url: 'S5 链接 (socks5://user:pass@host:port)',
+    outLine: '出口线路'
   },
   device: {
     deviceId: '设备 ID',

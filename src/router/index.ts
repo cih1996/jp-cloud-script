@@ -48,6 +48,11 @@ const router = createRouter({
           path: 'unified-test',
           name: 'unifiedTest',
           component: () => import('@/views/test/UnifiedTestView.vue')
+        },
+        {
+          path: 'logs',
+          name: 'logs',
+          component: () => import('@/views/system/LogView.vue')
         }
       ]
     }
