@@ -30,288 +30,309 @@
     </el-card>
 
     <div class="main-content">
-      <div class="content-flex-container">
-        <!-- Left Column: Function Tabs -->
-        <div class="left-panel">
-          <el-tabs tab-position="left" v-model="activeTab" style="height: 100%;" class="function-tabs">
-            <el-tab-pane :label="$t('testView.login')" name="login">
-              <div class="action-panel">
-                <el-form label-width="80px">
-                  <el-form-item :label="$t('testView.token')">
-                    <el-input v-model="token" placeholder="Enter Token" type="textarea" :rows="3" />
-                  </el-form-item>
-                  <el-form-item>
-                    <el-button type="primary" @click="sendLogin">{{ $t('testView.login') }}</el-button>
-                  </el-form-item>
-                </el-form>
-              </div>
-            </el-tab-pane>
+      <el-tabs v-model="topActiveTab" class="top-level-tabs" type="border-card">
+        <el-tab-pane label="Debug Console" name="debug">
+          <div class="content-flex-container">
+            <!-- Left Column: Function Tabs -->
+            <div class="left-panel">
+              <el-tabs tab-position="left" v-model="activeTab" style="height: 100%;" class="function-tabs">
+                <el-tab-pane :label="$t('testView.login')" name="login">
+                  <div class="action-panel">
+                    <el-form label-width="80px">
+                      <el-form-item :label="$t('testView.token')">
+                        <el-input v-model="token" placeholder="Enter Token" type="textarea" :rows="3" />
+                      </el-form-item>
+                      <el-form-item>
+                        <el-button type="primary" @click="sendLogin">{{ $t('testView.login') }}</el-button>
+                      </el-form-item>
+                    </el-form>
+                  </div>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.getDeviceList')" name="getDeviceList">
-              <el-button type="primary" @click="sendGetDeviceList">{{ $t('testView.getList') }}</el-button>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.getDeviceList')" name="getDeviceList">
+                  <el-button type="primary" @click="sendGetDeviceList">{{ $t('testView.getList') }}</el-button>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.getAppList')" name="getAppList">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.tbDeviceId')">
-                  <el-input-number v-model="formData.tbDeviceId" :min="1" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('getAppList')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.getAppList')" name="getAppList">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.tbDeviceId')">
+                      <el-input-number v-model="formData.tbDeviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getAppList')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.startApp')" name="startApp">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.deviceId')">
-                  <el-input-number v-model="formData.deviceId" :min="1" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.package')">
-                  <el-input v-model="formData.packageName" placeholder="com.example.app" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('startApp')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.startApp')" name="startApp">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.package')">
+                      <el-input v-model="formData.packageName" placeholder="com.example.app" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('startApp')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.getDeviceDetail')" name="getDeviceDetail">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.deviceId')">
-                  <el-input-number v-model="formData.deviceId" :min="1" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('getDeviceDetail')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.getDeviceDetail')" name="getDeviceDetail">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getDeviceDetail')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.getDeviceStatus')" name="getDeviceStatus">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.deviceId')">
-                  <el-input-number v-model="formData.deviceId" :min="1" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('getDeviceStatus')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.getDeviceStatus')" name="getDeviceStatus">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getDeviceStatus')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.hideApp')" name="hideApp">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.deviceId')">
-                  <el-input-number v-model="formData.deviceId" :min="1" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.package')">
-                  <el-input v-model="formData.packageName" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.isHide')">
-                  <el-switch v-model="formData.isHide" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('hideApp')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane label="Get Root" name="getRoot">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item label="Package">
+                      <el-input v-model="formData.packageName" placeholder="com.android.shell" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getRoot')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.downloadApp')" name="downloadApp">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.devices')">
-                   <el-input v-model="formData.deviceIdStr" placeholder="123,456" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.appName')">
-                  <el-input v-model="formData.downloadName" placeholder="App Name" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.downloadUrl')">
-                  <el-input v-model="formData.downloadUrl" placeholder="https://..." />
-                </el-form-item>
-                <el-form-item :label="$t('testView.sha256')">
-                  <el-input v-model="formData.downloadSha256" placeholder="SHA256 Hash" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.autoInstall')">
-                  <el-switch v-model="formData.downloadInstall" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('downLoadInstallApp')">{{ $t('testView.sendDownload') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.hideApp')" name="hideApp">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.package')">
+                      <el-input v-model="formData.packageName" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.isHide')">
+                      <el-switch v-model="formData.isHide" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('hideApp')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.getDownloadProgress')" name="getDownloadProgress">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.deviceId')">
-                  <el-input-number v-model="formData.deviceId" :min="1" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.taskId')">
-                  <el-input v-model="formData.downloadTaskId" placeholder="Task ID" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('getDownloadProgress')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.downloadApp')" name="downloadApp">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.devices')">
+                       <el-input v-model="formData.deviceIdStr" placeholder="123,456" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.appName')">
+                      <el-input v-model="formData.downloadName" placeholder="App Name" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.downloadUrl')">
+                      <el-input v-model="formData.downloadUrl" placeholder="https://..." />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.sha256')">
+                      <el-input v-model="formData.downloadSha256" placeholder="SHA256 Hash" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.autoInstall')">
+                      <el-switch v-model="formData.downloadInstall" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('downLoadInstallApp')">{{ $t('testView.sendDownload') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.getUserFiles')" name="getUserFiles">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.fileName')">
-                  <el-input v-model="formData.fileName" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('getUserFiles')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.getDownloadProgress')" name="getDownloadProgress">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.taskId')">
+                      <el-input v-model="formData.downloadTaskId" placeholder="Task ID" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getDownloadProgress')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.changePhones')" name="changePhones">
-              <el-form label-width="120px" :model="changePhoneForm">
-                <el-form-item :label="$t('testView.deviceId')">
-                  <el-input-number v-model="changePhoneForm.deviceId" :min="1" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.category')">
-                  <el-input v-model="changePhoneForm.category" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.bs')">
-                  <el-input v-model="changePhoneForm.bs" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.operator')">
-                  <el-input v-model="changePhoneForm.operator" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.timezone')">
-                  <el-input v-model="changePhoneForm.timezone" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.language')">
-                  <el-input v-model="changePhoneForm.language" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.version')">
-                  <el-input v-model="changePhoneForm.version" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.country')">
-                  <el-input v-model="changePhoneForm.country" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.operatorName')">
-                  <el-input v-model="changePhoneForm.operatorName" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.mcc')">
-                  <el-input v-model="changePhoneForm.mcc" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.mnc')">
-                  <el-input v-model="changePhoneForm.mnc" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.msisdn')">
-                  <el-input v-model="changePhoneForm.msisdn" />
-                </el-form-item>
-                <el-form-item :label="$t('changeOs.smsc')">
-                  <el-input v-model="changePhoneForm.smsc" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendChangePhones">{{ $t('testView.sendChangePhones') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.getUserFiles')" name="getUserFiles">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.fileName')">
+                      <el-input v-model="formData.fileName" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getUserFiles')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.getTaskStatus')" name="getTaskStatus">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.taskIds')">
-                  <el-input v-model="formData.tbChangeOsIdsStr" placeholder="123,456" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('getTaskStatus')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.changePhones')" name="changePhones">
+                  <el-form label-width="120px" :model="changePhoneForm">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="changePhoneForm.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.category')">
+                      <el-input v-model="changePhoneForm.category" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.bs')">
+                      <el-input v-model="changePhoneForm.bs" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.operator')">
+                      <el-input v-model="changePhoneForm.operator" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.timezone')">
+                      <el-input v-model="changePhoneForm.timezone" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.language')">
+                      <el-input v-model="changePhoneForm.language" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.version')">
+                      <el-input v-model="changePhoneForm.version" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.country')">
+                      <el-input v-model="changePhoneForm.country" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.operatorName')">
+                      <el-input v-model="changePhoneForm.operatorName" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.mcc')">
+                      <el-input v-model="changePhoneForm.mcc" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.mnc')">
+                      <el-input v-model="changePhoneForm.mnc" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.msisdn')">
+                      <el-input v-model="changePhoneForm.msisdn" />
+                    </el-form-item>
+                    <el-form-item :label="$t('changeOs.smsc')">
+                      <el-input v-model="changePhoneForm.smsc" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendChangePhones">{{ $t('testView.sendChangePhones') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.setLocation')" name="setLocation">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.deviceId')">
-                  <el-input-number v-model="formData.deviceId" :min="1" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.lat')">
-                  <el-input-number v-model="formData.lat" :precision="6" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.lng')">
-                  <el-input-number v-model="formData.lng" :precision="6" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('setLocation')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.getTaskStatus')" name="getTaskStatus">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.taskIds')">
+                      <el-input v-model="formData.tbChangeOsIdsStr" placeholder="123,456" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getTaskStatus')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <!-- Flattened Generic Commands -->
-            <el-tab-pane :label="$t('testView.execShell')" name="execShell">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.deviceId')">
-                  <el-input-number v-model="formData.deviceId" :min="1" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.shellCmd')">
-                  <el-input v-model="formData.shell" placeholder="e.g., ls -l" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('execShell')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.setLocation')" name="setLocation">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.lat')">
+                      <el-input-number v-model="formData.lat" :precision="6" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.lng')">
+                      <el-input-number v-model="formData.lng" :precision="6" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('setLocation')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.setSocket5')" name="setSocket5">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.deviceId')">
-                  <el-input-number v-model="formData.deviceId" :min="1" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.s5Url')">
-                  <el-input v-model="formData.s5Url" />
-                </el-form-item>
-                <el-form-item :label="$t('testView.outSwId')">
-                  <el-input-number v-model="formData.nOutSwID" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('setSocket5')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <!-- Flattened Generic Commands -->
+                <el-tab-pane :label="$t('testView.execShell')" name="execShell">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.shellCmd')">
+                      <el-input v-model="formData.shell" placeholder="e.g., ls -l" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('execShell')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('testView.getS5Outline')" name="getS5outLine">
-              <el-form label-width="100px">
-                <el-form-item :label="$t('testView.deviceId')">
-                  <el-input-number v-model="formData.deviceId" :min="1" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="sendGeneric('getS5outLine')">{{ $t('testView.send') }}</el-button>
-                </el-form-item>
-              </el-form>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.setSocket5')" name="setSocket5">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.s5Url')">
+                      <el-input v-model="formData.s5Url" />
+                    </el-form-item>
+                    <el-form-item :label="$t('testView.outSwId')">
+                      <el-input-number v-model="formData.nOutSwID" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('setSocket5')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-            <el-tab-pane :label="$t('rpa.customJson')" name="customJson">
-              <el-input type="textarea" v-model="formData.customJson" :rows="10" />
-              <div class="mt-2">
-                <el-button type="primary" @click="sendGeneric('customJson')">{{ $t('testView.send') }}</el-button>
-              </div>
-            </el-tab-pane>
+                <el-tab-pane :label="$t('testView.getS5Outline')" name="getS5outLine">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getS5outLine')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
 
-          </el-tabs>
-        </div>
+                <el-tab-pane :label="$t('rpa.customJson')" name="customJson">
+                  <el-input type="textarea" v-model="formData.customJson" :rows="10" />
+                  <div class="mt-2">
+                    <el-button type="primary" @click="sendGeneric('customJson')">{{ $t('testView.send') }}</el-button>
+                  </div>
+                </el-tab-pane>
 
-        <!-- Right Column: Logs -->
-        <div class="right-panel">
-          <el-card class="log-card" style="height: 100%; display: flex; flex-direction: column;">
-            <template #header>
-              <div class="card-header">
-                <span>{{ $t('testView.logs') }}</span>
-                <el-button size="small" @click="clearLogs">{{ $t('testView.clear') }}</el-button>
-              </div>
-            </template>
-            <div class="log-container" ref="logContainer">
-              <div v-for="(log, index) in logs" :key="index" class="log-item" :class="log.type">
-                <div class="log-meta">
-                  <span class="log-time">{{ log.time }}</span>
-                  <span class="log-type">[{{ log.type }}]</span>
-                </div>
-                <pre class="log-content">{{ log.data }}</pre>
-              </div>
+              </el-tabs>
             </div>
-          </el-card>
-        </div>
-      </div>
+
+            <!-- Right Column: Logs -->
+            <div class="right-panel">
+              <el-card class="log-card" style="height: 100%; display: flex; flex-direction: column;">
+                <template #header>
+                  <div class="card-header">
+                    <span>{{ $t('testView.logs') }}</span>
+                    <el-button size="small" @click="clearLogs">{{ $t('testView.clear') }}</el-button>
+                  </div>
+                </template>
+                <div class="log-container" ref="logContainer">
+                  <div v-for="(log, index) in logs" :key="index" class="log-item" :class="log.type">
+                    <div class="log-meta">
+                      <span class="log-time">{{ log.time }}</span>
+                      <span class="log-type">[{{ log.type }}]</span>
+                    </div>
+                    <pre class="log-content">{{ log.data }}</pre>
+                  </div>
+                </div>
+              </el-card>
+            </div>
+          </div>
+        </el-tab-pane>
+        <el-tab-pane label="API Documentation" name="docs">
+          <ApiDocs />
+        </el-tab-pane>
+      </el-tabs>
     </div>
   </div>
 </template>
@@ -321,10 +342,12 @@ import { ref, onUnmounted, reactive, nextTick, onMounted, watch } from 'vue'
 
 import { useSdkStore } from '@/stores/sdkStore'
 import { ElMessage } from 'element-plus'
+import ApiDocs from './ApiDocs.vue'
 
 const wsUrl = ref('ws://127.0.0.1:1001/api/unified/ws')
 const isConnected = ref(false)
 const token = ref('')
+const topActiveTab = ref('debug')
 const activeTab = ref('login')
 const heartbeatEnabled = ref(true)
 const heartbeatIntervalMs = ref(30000)
@@ -438,6 +461,9 @@ const sendGeneric = (type: string) => {
         break
       case 'getDeviceStatus':
         data = { deviceId: formData.deviceId }
+        break
+      case 'getRoot':
+        data = { deviceId: formData.deviceId, pkg: formData.packageName || 'com.android.shell' }
         break
       case 'getAppList':
         data = { deviceId: formData.tbDeviceId }
@@ -675,10 +701,27 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
+.top-level-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-level-tabs :deep(.el-tabs__content) {
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+}
+
+.top-level-tabs :deep(.el-tab-pane) {
+  height: 100%;
+}
+
 .content-flex-container {
   display: flex;
   height: 100%;
   gap: 20px;
+  padding: 15px;
 }
 
 .left-panel {
