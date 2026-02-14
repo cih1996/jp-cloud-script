@@ -59,8 +59,8 @@ export class WsConn extends Conn {
                     }
                 }
                 const uint8Data = new Uint8Array(arrayBuffer);
-                const hex = Array.from(uint8Data).map(b => b.toString(16).padStart(2, '0')).join(' ');
-                console.log(`[SDK-DEBUG-WS] Received WS Message (${uint8Data.length} bytes): ${hex}`);
+                // const hex = Array.from(uint8Data).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                // console.log(`[SDK-DEBUG-WS] Received WS Message (${uint8Data.length} bytes): ${hex}`);
                 this._onData(uint8Data);
             }
             catch (err) {

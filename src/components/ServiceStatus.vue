@@ -11,12 +11,17 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { localService } from '@/api/localService';
+import { useUnifiedWebSocket } from '@/composables/useUnifiedWebSocket';
 
 const isConnected = ref(false);
-let timer: number | null = null;
+let timer: any = null;
+const { connect: connectUnifiedWS } = useUnifiedWebSocket();
 
 const checkStatus = async () => {
   isConnected.value = await localService.checkHealth();
+  if (isConnected.value) {
+    connectUnifiedWS();
+  }
 };
 
 onMounted(() => {

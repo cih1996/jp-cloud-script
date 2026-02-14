@@ -35,6 +35,10 @@
           <el-icon><Connection /></el-icon>
           <span>{{ $t('menu.unifiedTest') }}</span>
         </el-menu-item>
+        <el-menu-item index="/logs">
+          <el-icon><Document /></el-icon>
+          <span>{{ $t('menu.logs') }}</span>
+        </el-menu-item>
       </el-menu>
       
       <ServiceStatus />
@@ -92,7 +96,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSdkStore } from '@/stores/sdkStore'
 import { useI18n } from 'vue-i18n'
-import { Monitor, ArrowDown, Files, VideoPlay, Connection } from '@element-plus/icons-vue'
+import { Monitor, ArrowDown, Files, VideoPlay, Connection, Document } from '@element-plus/icons-vue'
 import ServiceStatus from '@/components/ServiceStatus.vue'
 
 const route = useRoute()
@@ -121,6 +125,7 @@ const handleLangCommand = (lang: string) => {
 .layout-container {
   height: 100vh;
   background-color: #f3f4f6;
+  overflow: hidden; /* Fix layout overflow */
 }
 
 .header-right {
