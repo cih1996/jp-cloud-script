@@ -35,6 +35,11 @@ const router = createRouter({
           component: DeviceInspectorView
         },
         {
+          path: 'device/control',
+          name: 'deviceControl',
+          component: () => import('@/views/device/DeviceControlView.vue')
+        },
+        {
           path: 'cloud',
           name: 'cloudFile',
           component: () => import('@/views/CloudFile.vue')

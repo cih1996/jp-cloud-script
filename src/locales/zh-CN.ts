@@ -24,6 +24,7 @@ export default {
   menu: {
     dashboard: '仪表盘',
     deviceList: '设备列表',
+    deviceControl: '设备操控',
     deviceInspector: '设备调试',
     batch: '批量操作',
     dev: '脚本开发',
@@ -236,6 +237,26 @@ export default {
       noFile: '无文件',
       customScript: '自定义脚本'
     }
+  },
+  control: {
+    screenPreview: '屏幕预览',
+    autoRefresh: '自动刷新',
+    noScreenshot: '暂无截图，请选择设备后截图',
+    capture: '截图',
+    lastClick: '上次点击',
+    deviceSelect: '设备选择',
+    selectDevice: '请选择设备',
+    loadDevicesFailed: '加载设备列表失败',
+    quickKeys: '快捷按键',
+    power: '电源',
+    scrollControl: '滚动控制',
+    scrollUp: '上滑',
+    scrollDown: '下滑',
+    textInput: '文字输入',
+    inputPlaceholder: '输入文字后发送到设备',
+    send: '发送',
+    manualTouch: '手动坐标点击',
+    tap: '点击'
   },
   testView: {
     connection: '连接',

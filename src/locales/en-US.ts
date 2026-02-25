@@ -24,6 +24,7 @@ export default {
   menu: {
     dashboard: 'Dashboard',
     deviceList: 'Device List',
+    deviceControl: 'Device Control',
     deviceInspector: 'Device Inspector',
     batch: 'Batch Ops',
     dev: 'Script Dev',
@@ -217,6 +218,26 @@ export default {
       noFile: 'No file',
       customScript: 'Custom Script'
     }
+  },
+  control: {
+    screenPreview: 'Screen Preview',
+    autoRefresh: 'Auto Refresh',
+    noScreenshot: 'No screenshot. Select a device and capture.',
+    capture: 'Capture',
+    lastClick: 'Last Click',
+    deviceSelect: 'Device Select',
+    selectDevice: 'Select a device',
+    loadDevicesFailed: 'Failed to load devices',
+    quickKeys: 'Quick Keys',
+    power: 'Power',
+    scrollControl: 'Scroll Control',
+    scrollUp: 'Scroll Up',
+    scrollDown: 'Scroll Down',
+    textInput: 'Text Input',
+    inputPlaceholder: 'Type text to send to device',
+    send: 'Send',
+    manualTouch: 'Manual Touch',
+    tap: 'Tap'
   },
   testView: {
     connection: 'Connection',

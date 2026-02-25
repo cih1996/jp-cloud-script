@@ -23,6 +23,10 @@
           <el-icon><Monitor /></el-icon>
           <span>{{ $t('menu.deviceList') }}</span>
         </el-menu-item>
+        <el-menu-item index="/device/control">
+          <el-icon><Pointer /></el-icon>
+          <span>{{ $t('menu.deviceControl') }}</span>
+        </el-menu-item>
         <el-menu-item index="/cloud">
           <el-icon><Files /></el-icon>
           <span>{{ $t('menu.cloudFile') }}</span>
@@ -96,7 +100,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSdkStore } from '@/stores/sdkStore'
 import { useI18n } from 'vue-i18n'
-import { Monitor, ArrowDown, Files, VideoPlay, Connection, Document } from '@element-plus/icons-vue'
+import { Monitor, ArrowDown, Files, VideoPlay, Connection, Document, Pointer } from '@element-plus/icons-vue'
 import ServiceStatus from '@/components/ServiceStatus.vue'
 
 const route = useRoute()

@@ -74,6 +74,16 @@ export const localService = {
         return await res.json();
     },
 
+    async callUnified(data: any): Promise<any> {
+        const res = await fetch(`${BASE_URL}/api/unified`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        return await res.json();
+    },
+
     async updateConfig(wsUrl: string) {
         try {
             const res = await fetch(`${BASE_URL}/api/config/update`, {
