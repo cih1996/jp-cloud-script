@@ -39,6 +39,9 @@
                 <el-tab-pane :label="$t('testView.login')" name="login">
                   <div class="action-panel">
                     <el-form label-width="80px">
+                      <el-form-item label="Host">
+                        <el-input v-model="serverHost" placeholder="minio.accjs.cn" />
+                      </el-form-item>
                       <el-form-item :label="$t('testView.token')">
                         <el-input v-model="token" placeholder="Enter Token" type="textarea" :rows="3" />
                       </el-form-item>
@@ -347,6 +350,7 @@ import ApiDocs from './ApiDocs.vue'
 const wsUrl = ref('ws://127.0.0.1:1001/api/unified/ws')
 const isConnected = ref(false)
 const token = ref('')
+const serverHost = ref(localStorage.getItem('jpy_ws_host') || localStorage.getItem('last_host') || 'minio.accjs.cn')
 const topActiveTab = ref('debug')
 const activeTab = ref('login')
 const heartbeatEnabled = ref(true)
@@ -641,7 +645,7 @@ const sendLogin = () => {
     ElMessage.warning('Enter token')
     return
   }
-  send('Login', null, { token: token.value })
+  send('Login', null, { token: token.value, host: serverHost.value })
 }
 
 const sendGetDeviceList = () => {

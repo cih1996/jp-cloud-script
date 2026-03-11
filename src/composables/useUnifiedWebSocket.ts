@@ -26,7 +26,8 @@ const connect = () => {
       console.log('[UnifiedWS] Connected')
       // Auto login with global key if available
       if (sdkStore.apiKey) {
-        send('Login', null, { token: sdkStore.apiKey })
+        const host = localStorage.getItem('jpy_ws_host') || localStorage.getItem('last_host') || ''
+        send('Login', null, { token: sdkStore.apiKey, host })
       }
     }
     

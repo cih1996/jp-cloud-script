@@ -79,11 +79,12 @@ const formatJson = (data: any) => {
 const apiList = [
   {
     title: '1. Login',
-    description: 'Authenticate with the WebSocket server using your API token.',
+    description: 'Authenticate with the WebSocket server using your API token. Optionally specify a host to connect to a different cloud server.',
     request: {
       type: "Login",
       seq: 1,
-      token: "YOUR_API_TOKEN"
+      token: "YOUR_API_TOKEN",
+      host: "minio.accjs.cn"
     },
     response: {
       type: "Login",
