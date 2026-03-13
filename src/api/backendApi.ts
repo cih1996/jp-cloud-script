@@ -1,0 +1,261 @@
+/**
+ * 后端 API 封装
+ * 所有请求都通过 go-port-trans 后端，不直连集控平台
+ */
+
+// 动态获取后端地址
+const getBaseUrl = () => {
+    const host = window.location.hostname || '127.0.0.1'
+    return `http://${host}:1001`
+}
+
+// 统一请求方法
+const callUnified = async (type: string, data?: any, extra?: any) => {
+    const res = await fetch(`${getBaseUrl()}/api/unified`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            type,
+            seq: Date.now(),
+            data,
+            ...extra
+        })
+    })
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`)
+    const json = await res.json()
+    if (json.code !== 200) {
+        throw new Error(json.msg || 'Request failed')
+    }
+    return json.data
+}
+
+export const backendApi = {
+    // 获取设备列表
+    async getDeviceList() {
+        return await callUnified('GetDeviceList')
+    },
+
+    // 获取云文件列表
+    async getCloudFiles(params?: { pageNum?: number; pageSize?: number }) {
+        return await callUnified('getUserFiles', params || {})
+    },
+
+    // 改机
+    async changePhones(data: any[]) {
+        return await callUnified('Changephones', data, { req: true })
+    },
+
+    // 获取任务状态
+    async getTaskStatus(data: { funcIds: number[] }) {
+        return await callUnified('getTaskStatus', data)
+    },
+
+    // 获取应用列表
+    async getAppList(deviceId: number) {
+        return await callUnified('getAppList', { deviceId })
+    },
+
+    // 启动应用
+    async startApp(deviceId: number, packageName: string) {
+        return await callUnified('startApp', { deviceId, packageName })
+    },
+
+    // 下载安装应用
+    async downloadInstallApp(data: {
+        devices: number[]
+        url: string
+        name?: string
+        sha256?: string
+        install?: boolean
+    }) {
+        return await callUnified('downLoadInstallApp', data)
+    },
+
+    // 设置代理
+    async setSocket5(data: {
+        deviceId: number
+        s5Url: string
+        nOutSwID?: number
+        lineType?: number
+    }) {
+        return await callUnified('setSocket5', data)
+    },
+
+    // 获取代理线路
+    async getS5outLine(deviceId: number) {
+        return await callUnified('getS5outLine', { deviceId })
+    },
+
+    // 设置定位
+    async setLocation(data: { deviceId: number; lat: number; lng: number }[]) {
+        return await callUnified('setLocation', data)
+    },
+
+    // 执行 Shell 命令
+    async execShell(deviceId: number, shell: string) {
+        return await callUnified('execShell', { deviceId, shell })
+    },
+
+    // 隐藏应用
+    async hideApp(deviceId: number, packageName: string, isHide: boolean) {
+        return await callUnified('hideApp', { deviceId, packageName, isHide })
+    },
+
+    // 获取设备详情
+    async getDeviceDetail(deviceId: number) {
+        return await callUnified('getDeviceDetail', { deviceId })
+    },
+
+    // 获取设备状态
+    async getDeviceStatus(deviceId: number) {
+        return await callUnified('getDeviceStatus', { deviceId })
+    },
+
+    // 获取 Root 权限
+    async getRoot(deviceId: number, pkg?: string) {
+        return await callUnified('getRoot', { deviceId, pkg })
+    },
+
+    // ========== RPA 相关 API ==========
+
+    // 获取 RPA 流程列表
+    async getRpaFlows() {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/flows`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 获取单个 RPA 流程
+    async getRpaFlow(id: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/flows/${id}`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 创建 RPA 流程
+    async createRpaFlow(flow: any) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/flows`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(flow)
+        })
+        const json = await res.json()
+        return json.data
+    },
+
+    // 更新 RPA 流程
+    async updateRpaFlow(id: number, flow: any) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/flows/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(flow)
+        })
+        const json = await res.json()
+        return json.data
+    },
+
+    // 删除 RPA 流程
+    async deleteRpaFlow(id: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/flows/${id}`, {
+            method: 'DELETE'
+        })
+        const json = await res.json()
+        return json
+    },
+
+    // 获取所有设备 RPA 配置
+    async getRpaDevices() {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/devices`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 获取单个设备 RPA 状态
+    async getRpaDeviceStatus(deviceId: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/devices/${deviceId}`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 绑定设备到 RPA 流程
+    async bindDeviceRpa(deviceId: number, rpaId: number, mode: 'single' | 'loop' = 'single') {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/devices/${deviceId}/bind`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rpaId, mode })
+        })
+        const json = await res.json()
+        return json
+    },
+
+    // 启动设备 RPA 执行
+    async startDeviceRpa(deviceId: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/devices/${deviceId}/start`, {
+            method: 'POST'
+        })
+        const json = await res.json()
+        return json
+    },
+
+    // 暂停设备 RPA 执行
+    async pauseDeviceRpa(deviceId: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/devices/${deviceId}/pause`, {
+            method: 'POST'
+        })
+        const json = await res.json()
+        return json
+    },
+
+    // 恢复设备 RPA 执行
+    async resumeDeviceRpa(deviceId: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/devices/${deviceId}/resume`, {
+            method: 'POST'
+        })
+        const json = await res.json()
+        return json
+    },
+
+    // 停止设备 RPA 执行
+    async stopDeviceRpa(deviceId: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/devices/${deviceId}/stop`, {
+            method: 'POST'
+        })
+        const json = await res.json()
+        return json
+    },
+
+    // 获取设备 RPA 日志
+    async getDeviceRpaLogs(deviceId: number, limit = 100) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/devices/${deviceId}/logs?limit=${limit}`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 获取可用步骤类型
+    async getRpaStepTypes() {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/step-types`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 获取引擎状态
+    async getRpaEngineStatus() {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/engine/status`)
+        const json = await res.json()
+        return json
+    },
+
+    // 启动引擎
+    async startRpaEngine() {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/engine/start`, { method: 'POST' })
+        const json = await res.json()
+        return json
+    },
+
+    // 停止引擎
+    async stopRpaEngine() {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/engine/stop`, { method: 'POST' })
+        const json = await res.json()
+        return json
+    }
+}

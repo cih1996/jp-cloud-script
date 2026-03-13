@@ -3,7 +3,7 @@
     <div class="header-actions">
       <div class="top-bar">
          <el-alert
-          title="WebSocket Endpoint: ws://127.0.0.1:1001/api/unified/ws"
+          :title="`WebSocket Endpoint: ${wsEndpoint}`"
           type="info"
           show-icon
           :closable="false"
@@ -40,10 +40,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 
 const activeNames = ref([0])
+
+// 动态获取 WebSocket 地址
+const wsEndpoint = computed(() => {
+  const host = window.location.hostname || '127.0.0.1'
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${host}:1001/api/unified/ws`
+})
 
 const copyToClipboard = (data: any) => {
   const text = JSON.stringify(data, null, 2)
@@ -55,7 +62,7 @@ const copyToClipboard = (data: any) => {
 }
 
 const copyAll = () => {
-  let allText = "WebSocket API Documentation\n\nEndpoint: ws://127.0.0.1:1001/api/unified/ws\n\n";
+  let allText = `WebSocket API Documentation\n\nEndpoint: ${wsEndpoint.value}\n\n`;
   
   apiList.forEach(api => {
     allText += `### ${api.title}\n`;

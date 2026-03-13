@@ -153,12 +153,9 @@ const clearLogs = () => {
 }
 
 const downloadLogs = () => {
-  // Use direct link to backend download endpoint
-  // Assuming backend is at 127.0.0.1:1001, but we should use relative path if proxied, 
-  // or construct full URL if we know the host.
-  // Since we are in vue-app, let's assume direct access or via proxy.
-  // For now hardcode or use localService base logic if available.
-  window.open('http://127.0.0.1:1001/api/logs/download', '_blank')
+  // 动态获取后端地址
+  const host = window.location.hostname || '127.0.0.1'
+  window.open(`http://${host}:1001/api/logs/download`, '_blank')
 }
 </script>
 

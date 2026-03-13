@@ -14,17 +14,15 @@ import { ref, onMounted, watch } from 'vue';
 import RpaSidebar from './rpa/RpaSidebar.vue';
 import RpaEditor from './rpa/RpaEditor.vue';
 import { useSdkStore } from '@/stores/sdkStore';
+import { backendApi } from '@/api/backendApi';
 
 const sdkStore = useSdkStore();
 const allDevices = ref<any[]>([]);
 
 const loadDevices = async () => {
     try {
-        if (!sdkStore.sdk) return;
-        const res = await sdkStore.sdk.userDeviceCtl.getUserDeviceList({
-            pageNum: 1,
-            pageSize: 9999
-        });
+        if (!sdkStore.apiKey) return;
+        const res = await backendApi.getDeviceList();
         if (res && res.records) {
             allDevices.value = res.records;
         }
@@ -34,12 +32,12 @@ const loadDevices = async () => {
 };
 
 onMounted(() => {
-    if (sdkStore.isConnected) {
+    if (sdkStore.apiKey) {
         loadDevices();
     }
 });
 
-watch(() => sdkStore.isConnected, (val) => {
+watch(() => sdkStore.apiKey, (val) => {
     if (val) loadDevices();
 });
 </script>

@@ -150,6 +150,7 @@
 import { ref, onMounted } from 'vue'
 import { useSdkStore } from '@/stores/sdkStore'
 import { localService } from '@/api/localService'
+import { backendApi } from '@/api/backendApi'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
@@ -180,9 +181,9 @@ const nextSeq = () => ++seqCounter
 
 // 获取设备列表
 const fetchDevices = async () => {
-  if (!sdkStore.sdk) return
+  if (!sdkStore.apiKey) return
   try {
-    const res = await sdkStore.sdk.userDeviceCtl.getUserDeviceList({ pageNum: 1, pageSize: 100 })
+    const res = await backendApi.getDeviceList()
     deviceList.value = res?.records || []
   } catch (e) {
     ElMessage.error(t('control.loadDevicesFailed'))

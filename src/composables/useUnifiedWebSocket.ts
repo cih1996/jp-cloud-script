@@ -7,6 +7,13 @@ const isConnected = ref(false)
 let ws: WebSocket | null = null
 const messageHandlers = new Set<(data: any) => void>()
 
+// 动态获取 WebSocket 地址：根据当前网页 HOST
+const getWsUrl = () => {
+  const host = window.location.hostname || '127.0.0.1'
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${host}:1001/api/unified/ws`
+}
+
 const connect = () => {
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
     return
@@ -15,9 +22,9 @@ const connect = () => {
   const sdkStore = useSdkStore()
   const debugStore = useDebugStore()
 
-  // Assuming local service is on 127.0.0.1:1001
-  const wsUrl = 'ws://127.0.0.1:1001/api/unified/ws'
-  
+  const wsUrl = getWsUrl()
+  console.log('[UnifiedWS] Connecting to', wsUrl)
+
   try {
     ws = new WebSocket(wsUrl)
     

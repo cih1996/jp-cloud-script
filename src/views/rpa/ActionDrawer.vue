@@ -58,16 +58,20 @@ const actionSearch = ref('');
 
 const actionCategories = computed(() => ({
     'system': [
-        { type: 'change_os', label: t('rpa.actions.changeOs') }
+        { type: 'change_os_and_wait', label: '改机重启' },
+        { type: 'set_proxy_and_wait', label: '设置代理' },
+        { type: 'set_location', label: '设置定位' },
+        { type: 'install_app_and_wait', label: '安装应用' },
+        { type: 'get_root', label: '应用提权' }
     ],
     'network': [
-        { type: 'download_url', label: t('rpa.actions.downloadUrl') },
-        { type: 'download_cloud', label: t('rpa.actions.downloadCloud') },
-        { type: 'http_request', label: t('rpa.actions.httpRequest') }
+        { type: 'download_url', label: 'URL下载' },
+        { type: 'download_cloud', label: '云端下载' },
+        { type: 'http_request', label: 'HTTP请求' }
     ],
     'scripting': [
-        { type: 'shell', label: t('rpa.actions.shellScript') },
-        { type: 'custom_js', label: t('rpa.actions.customJs') }
+        { type: 'shell', label: 'Shell命令' },
+        { type: 'run_script_and_wait', label: '运行脚本' }
     ]
 }));
 

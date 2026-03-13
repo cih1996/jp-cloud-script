@@ -16,7 +16,7 @@
         <el-button circle class="icon-btn" @click="rpaStore.exportTasks" :title="t('rpa.export')">
           <el-icon><Download /></el-icon>
         </el-button>
-        <el-button circle class="add-btn" @click="rpaStore.createTask" :title="t('rpa.create')">
+        <el-button circle class="add-btn" @click="() => rpaStore.createTask()" :title="t('rpa.create')">
           <el-icon><Plus /></el-icon>
         </el-button>
       </div>
@@ -50,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { useRpaStore } from '@/stores/rpaStore';
 import { useI18n } from 'vue-i18n';
 import { Plus, Delete, Monitor, Download, Upload } from '@element-plus/icons-vue';
@@ -57,11 +58,17 @@ import { Plus, Delete, Monitor, Download, Upload } from '@element-plus/icons-vue
 const rpaStore = useRpaStore();
 const { t } = useI18n();
 
-const getTaskColor = (id: string) => {
+// 加载流程列表
+onMounted(() => {
+  rpaStore.loadFlows();
+});
+
+const getTaskColor = (id: number | string) => {
+    const idStr = String(id);
     const colors = ['#FF2D55', '#5856D6', '#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF3B30', '#5AC8FA'];
     let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    for (let i = 0; i < idStr.length; i++) {
+        hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
     }
     return colors[Math.abs(hash) % colors.length];
 };

@@ -7,6 +7,7 @@
 import { ref } from 'vue';
 import { useSdkStore } from '@/stores/sdkStore';
 import { localService } from '@/api/localService';
+import { backendApi } from '@/api/backendApi';
 import type { RpaTask, RpaStep } from '@/stores/rpaStore';
 
 interface ExecutionContext {
@@ -103,11 +104,11 @@ export const useRpaExecution = () => {
     };
 
     const runChangeOs = async (deviceId: number, params: any) => {
-        if (!sdkStore.sdk) throw new Error('SDK not ready');
-        await sdkStore.sdk.changeOsCtl.changeOs({
+        if (!sdkStore.apiKey) throw new Error('Not logged in');
+        await backendApi.changePhones([{
             deviceId: deviceId,
             ...params
-        });
+        }]);
     };
 
     const runHttpRequest = async (_step: RpaStep, resolvedParams: any, _context: ExecutionContext) => {
@@ -133,8 +134,8 @@ export const useRpaExecution = () => {
     const runCustomJs = async (code: string, context: ExecutionContext, device: any) => {
         try {
             // eslint-disable-next-line no-new-func
-            const func = new Function('context', 'sdk', 'http', 'device', `return (async () => { ${code} })()`);
-            return await func(context, sdkStore.sdk, httpHelper, device);
+            const func = new Function('context', 'api', 'http', 'device', `return (async () => { ${code} })()`);
+            return await func(context, backendApi, httpHelper, device);
         } catch (e: any) {
             throw new Error(`Script error: ${e.message}`);
         }
@@ -150,11 +151,10 @@ export const useRpaExecution = () => {
         } else if (step.type === 'download_url') {
             result = await runDownloadUrl(context.deviceId, resolvedParams.url, resolvedParams.fileName, resolvedParams.hash);
         } else if (step.type === 'download_cloud') {
-             const baseUrl = await sdkStore.sdk?.cloudCtl.getDownloadUrl();
-             if (!baseUrl) throw new Error('Failed to get download base URL');
-             const finalUrl = baseUrl.endsWith('/') ? baseUrl + step.params.fileName : baseUrl + '/' + step.params.fileName;
-             result = await runDownloadUrl(context.deviceId, finalUrl, step.params.fileName, step.params.hash);
-        } else if (step.type === 'change_os') {
+             // Cloud files already have URL in the response
+             if (!step.params.url) throw new Error('Cloud file URL not available');
+             result = await runDownloadUrl(context.deviceId, step.params.url, step.params.fileName, step.params.hash);
+        } else if (step.type === 'change_os_and_wait') {
             result = await runChangeOs(context.deviceId, resolvedParams);
         } else if (step.type === 'http_request') {
             result = await runHttpRequest(step, resolvedParams, context);

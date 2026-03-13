@@ -66,18 +66,13 @@ const router = createRouter({
 
 router.beforeEach(async (to, _from, next) => {
   const sdkStore = useSdkStore()
-  
-  // Try to initialize SDK if not already done (e.g. page refresh)
-  if (!sdkStore.sdk) {
-    sdkStore.initSdk()
-  }
 
   // If requires auth and not logged in (and no API key in storage/state)
   if (to.meta.requiresAuth && !sdkStore.isLoggedIn && !sdkStore.apiKey) {
     next('/login')
   } else if (to.path === '/login' && (sdkStore.isLoggedIn || sdkStore.apiKey)) {
       // If going to login but already has key, try to redirect home
-      // But we need to make sure login is actually valid. 
+      // But we need to make sure login is actually valid.
       // For now let's just allow them to go to login if they really want (e.g. to switch accounts)
       // or redirect if they are fully logged in.
       if (sdkStore.isLoggedIn) {

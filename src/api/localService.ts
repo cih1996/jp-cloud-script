@@ -1,4 +1,8 @@
-const BASE_URL = 'http://127.0.0.1:1001';
+// 动态获取后端地址：根据当前网页 HOST，端口固定 1001
+const getBaseUrl = () => {
+    const host = window.location.hostname || '127.0.0.1'
+    return `http://${host}:1001`
+}
 
 export interface ConnectParams {
     key: string;
@@ -20,8 +24,10 @@ export interface MiddleParams {
 }
 
 export const localService = {
+    getBaseUrl,
+
     async callMiddle(params: MiddleParams): Promise<any> {
-        const res = await fetch(`${BASE_URL}/api/middle`, {
+        const res = await fetch(`${getBaseUrl()}/api/middle`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(params)
@@ -33,7 +39,7 @@ export const localService = {
     async checkHealth(): Promise<boolean> {
         try {
             // Using /api/mappings as a lightweight check
-            const res = await fetch(`${BASE_URL}/api/mappings`, {
+            const res = await fetch(`${getBaseUrl()}/api/mappings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ key: 'check' })
@@ -45,7 +51,7 @@ export const localService = {
     },
 
     async getMappings(): Promise<{ mappings: any[] }> {
-        const res = await fetch(`${BASE_URL}/api/mappings`, {
+        const res = await fetch(`${getBaseUrl()}/api/mappings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({})
@@ -55,7 +61,7 @@ export const localService = {
     },
 
     async connect(params: ConnectParams) {
-        const res = await fetch(`${BASE_URL}/api/connect`, {
+        const res = await fetch(`${getBaseUrl()}/api/connect`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(params)
@@ -65,7 +71,7 @@ export const localService = {
     },
 
     async disconnect(params: DisconnectParams) {
-        const res = await fetch(`${BASE_URL}/api/disconnect`, {
+        const res = await fetch(`${getBaseUrl()}/api/disconnect`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(params)
@@ -75,7 +81,7 @@ export const localService = {
     },
 
     async callUnified(data: any): Promise<any> {
-        const res = await fetch(`${BASE_URL}/api/unified`, {
+        const res = await fetch(`${getBaseUrl()}/api/unified`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -86,7 +92,7 @@ export const localService = {
 
     async updateConfig(wsUrl: string) {
         try {
-            const res = await fetch(`${BASE_URL}/api/config/update`, {
+            const res = await fetch(`${getBaseUrl()}/api/config/update`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ wsUrl })

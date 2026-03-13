@@ -106,8 +106,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useSdkStore } from '@/stores/sdkStore';
+import { backendApi } from '@/api/backendApi';
 import { ElMessage } from 'element-plus';
-import type { ChangeOsReq } from '@sdk/index';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -144,7 +144,7 @@ const handleClose = () => {
 };
 
 const handleConfirm = async () => {
-  if (!sdkStore.sdk) return;
+  if (!sdkStore.apiKey) return;
   if (props.deviceIds.length === 0) {
     ElMessage.warning('No devices selected');
     return;
@@ -152,12 +152,12 @@ const handleConfirm = async () => {
 
   loading.value = true;
   try {
-    const reqs: ChangeOsReq[] = props.deviceIds.map(id => ({
+    const reqs = props.deviceIds.map(id => ({
       deviceId: id,
       ...form.value
     }));
 
-    const res = await sdkStore.sdk.changeOsCtl.changeOs(reqs);
+    const res = await backendApi.changePhones(reqs);
     ElMessage.success(`Change OS request sent for ${res.length} devices`);
     emit('success', res);
     visible.value = false;

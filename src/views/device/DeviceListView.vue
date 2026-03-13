@@ -53,33 +53,40 @@
         </div>
       </template>
 
-      <el-table 
+      <el-table
         ref="deviceTable"
-        :data="tableData" 
-        v-loading="loading" 
+        :data="tableData"
+        v-loading="loading"
         style="width: 100%"
         :header-cell-style="{ background: '#f9fafb', color: '#374151', fontWeight: '600' }"
         @selection-change="handleSelectionChange"
         table-layout="auto"
+        :cell-style="cellStyle"
       >
         <el-table-column type="selection" width="50" />
         <el-table-column prop="deviceId" :label="$t('device.deviceId')" min-width="120">
            <template #default="scope">
-            <span class="mono-text font-medium">{{ scope.row.deviceId }}</span>
-            <el-tag v-if="hasPortMapping(scope.row.deviceId, 9009)" size="small" type="success" effect="dark" class="ml-2">RPA</el-tag>
-            <el-tag v-if="hasPortMapping(scope.row.deviceId, 5555)" size="small" type="warning" effect="dark" class="ml-2">ADB</el-tag>
-            <el-tag 
-              v-for="port in getOtherMappings(scope.row.deviceId)" 
-              :key="port" 
-              size="small" 
-              type="info" 
-              effect="dark" 
-              class="ml-2"
-              closable
-              @close="handleStopCustomTunnel(port)"
-            >
-              {{ port }}
-            </el-tag>
+            <div>
+              <span class="mono-text font-medium">{{ scope.row.deviceId }}</span>
+              <el-tag v-if="hasPortMapping(scope.row.deviceId, 9009)" size="small" type="success" effect="dark" class="ml-2">RPA</el-tag>
+              <el-tag v-if="hasPortMapping(scope.row.deviceId, 5555)" size="small" type="warning" effect="dark" class="ml-2">ADB</el-tag>
+              <el-tag
+                v-for="port in getOtherMappings(scope.row.deviceId)"
+                :key="port"
+                size="small"
+                type="info"
+                effect="dark"
+                class="ml-2"
+                closable
+                @close="handleStopCustomTunnel(port)"
+              >
+                {{ port }}
+              </el-tag>
+            </div>
+            <!-- 错误信息直接显示在设备ID下方 -->
+            <div v-if="getRpaStatus(scope.row.deviceId)?.lastError" class="rpa-error-inline">
+              {{ getRpaStatus(scope.row.deviceId)?.lastError }}
+            </div>
           </template>
         </el-table-column>
         <!-- UUID Removed as per request -->
@@ -105,6 +112,59 @@
              </el-tag>
              <span v-else class="text-secondary">-</span>
            </template>
+        </el-table-column>
+
+        <!-- RPA 循环/耗时列 -->
+        <el-table-column label="RPA统计" width="140">
+          <template #default="scope">
+            <div v-if="getRpaStatus(scope.row.deviceId)?.rpaId" class="rpa-stats">
+              <el-tag size="small" type="primary" effect="plain">
+                第{{ (getRpaStatus(scope.row.deviceId)?.loopCount ?? 0) + 1 }}次
+              </el-tag>
+              <el-tag size="small" type="success" effect="plain">
+                {{ getCurrentDuration(scope.row.deviceId) }}
+              </el-tag>
+              <el-tag v-if="(getRpaStatus(scope.row.deviceId)?.loopCount ?? 0) > 0" size="small" type="info" effect="plain">
+                均{{ formatDuration(getAvgTime(scope.row.deviceId)) }}
+              </el-tag>
+            </div>
+            <span v-else class="text-secondary">-</span>
+          </template>
+        </el-table-column>
+
+        <!-- RPA 状态列 -->
+        <el-table-column label="RPA状态" min-width="180">
+          <template #default="scope">
+            <div v-if="getRpaStatus(scope.row.deviceId)" class="rpa-status-cell">
+              <div class="rpa-main-info">
+                <el-tag
+                  :type="getRpaStatusType(scope.row.deviceId)"
+                  size="small"
+                  effect="dark"
+                >
+                  {{ getRpaStatusText(scope.row.deviceId) }}
+                </el-tag>
+                <span v-if="getRpaStatus(scope.row.deviceId)?.rpaName" class="rpa-name">
+                  {{ getRpaStatus(scope.row.deviceId)?.rpaName }}
+                </span>
+              </div>
+              <div v-if="getRpaStatus(scope.row.deviceId)?.status === 'running'" class="rpa-detail-info">
+                <span class="step-info">
+                  {{ getRpaStatus(scope.row.deviceId)?.stepName }}
+                  <span v-if="getRpaStatus(scope.row.deviceId)?.subStepName" class="sub-step">
+                    → {{ getRpaStatus(scope.row.deviceId)?.subStepName }}
+                  </span>
+                </span>
+                <el-progress
+                  :percentage="getRpaProgress(scope.row.deviceId)"
+                  :stroke-width="4"
+                  :show-text="false"
+                  style="width: 80px;"
+                />
+              </div>
+            </div>
+            <span v-else class="text-secondary">-</span>
+          </template>
         </el-table-column>
         
         <el-table-column :label="$t('common.actions')" fixed="right" width="260">
@@ -244,35 +304,51 @@
     </el-dialog>
 
     <!-- Batch Run Dialog -->
-    <el-dialog v-model="batchRunVisible" :title="$t('batch.runTask')" width="500px">
+    <el-dialog v-model="batchRunVisible" :title="$t('batch.runTask')" width="550px">
       <el-form label-position="top">
-        <el-form-item :label="$t('batch.upload')">
-          <el-upload
-            class="upload-demo"
-            drag
-            action="#"
-            :auto-upload="false"
-            :limit="1"
-          >
-            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-            <div class="el-upload__text">
-              Drop file here or <em>click to upload</em>
-            </div>
-          </el-upload>
-        </el-form-item>
-        <el-form-item :label="$t('batch.selectScript')">
-          <el-select v-model="selectedScript" style="width: 100%">
-            <el-option label="Daily Login" value="daily_login" />
-            <el-option label="Change OS" value="change_os" />
+        <el-form-item label="选择 RPA 流程">
+          <el-select v-model="selectedRpaId" style="width: 100%" placeholder="请选择要执行的 RPA 流程">
+            <el-option
+              v-for="flow in rpaStore.flows"
+              :key="flow.id"
+              :label="`${flow.name} (${flow.steps?.length || 0} 步骤)`"
+              :value="flow.id"
+            />
           </el-select>
         </el-form-item>
-        <div class="bg-gray-50 p-3 rounded text-sm text-gray-600 mb-4">
-          Selected {{ selection.length }} devices will run this script.
+        <el-form-item label="执行模式">
+          <el-radio-group v-model="rpaRunMode">
+            <el-radio value="single">单次执行</el-radio>
+            <el-radio value="loop">循环执行</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <div class="batch-run-info">
+          <el-icon><InfoFilled /></el-icon>
+          <span>已选择 <strong>{{ selection.length }}</strong> 台设备，将绑定并启动所选 RPA 流程</span>
+        </div>
+        <div v-if="selectedRpaId && getSelectedFlow()" class="flow-preview">
+          <div class="flow-preview-title">流程步骤预览：</div>
+          <div class="flow-steps">
+            <el-tag
+              v-for="(step, idx) in getSelectedFlow()?.steps"
+              :key="idx"
+              size="small"
+              type="info"
+              class="step-tag"
+            >
+              {{ idx + 1 }}. {{ step.name || step.type }}
+            </el-tag>
+            <el-tag v-if="!getSelectedFlow()?.steps?.length" size="small" type="warning">
+              暂无步骤
+            </el-tag>
+          </div>
         </div>
       </el-form>
       <template #footer>
         <el-button @click="batchRunVisible = false">{{ $t('common.cancel') }}</el-button>
-        <el-button type="primary" @click="confirmBatchRun">{{ $t('common.confirm') }}</el-button>
+        <el-button type="primary" @click="confirmBatchRun" :disabled="!selectedRpaId" :loading="batchRunLoading">
+          绑定并启动
+        </el-button>
       </template>
     </el-dialog>
 
@@ -307,13 +383,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSdkStore } from '@/stores/sdkStore'
+import { useRpaStore, type DeviceRpaStatus } from '@/stores/rpaStore'
 import { useDeviceTunnel } from '@/composables/useDeviceTunnel'
 import { localService } from '@/api/localService'
+import { backendApi } from '@/api/backendApi'
 import { ElMessage, ElTable, ElMessageBox, ElLoading } from 'element-plus'
-import { Refresh, Search, VideoPlay, UploadFilled, ArrowDown, MagicStick } from '@element-plus/icons-vue'
+import { Refresh, Search, VideoPlay, ArrowDown, MagicStick, InfoFilled } from '@element-plus/icons-vue'
 import ChangeOsDialog from '@/components/ChangeOsDialog.vue'
 import S5ConfigDialog from '@/components/S5ConfigDialog.vue'
 import { useI18n } from 'vue-i18n'
@@ -322,6 +400,7 @@ import type { ListRes } from '@sdk/index'
 const { t } = useI18n()
 const router = useRouter()
 const sdkStore = useSdkStore()
+const rpaStore = useRpaStore()
 const { 
   isConnecting, 
   activeDeviceId, 
@@ -457,13 +536,13 @@ const handleCommand = async (cmd: string, row: any) => {
 }
 
 const fetchCloudFiles = async () => {
-    if (!sdkStore.sdk) return;
+    if (!sdkStore.apiKey) return;
     cloudFileLoading.value = true;
     try {
-        const res = await sdkStore.sdk.cloudCtl.list({});
+        const res = await backendApi.getCloudFiles({});
         // Filter apk files if possible, but backend list doesn't seem to support filter.
         // Client side filter:
-        cloudFileList.value = (res || []).filter((f: any) => f.fileName.toLowerCase().endsWith('.apk'));
+        cloudFileList.value = (res || []).filter((f: any) => f.fileName?.toLowerCase().endsWith('.apk'));
     } catch (e) {
         ElMessage.error('Failed to fetch cloud files');
     } finally {
@@ -480,21 +559,13 @@ const handleDownloadTabChange = (tab: string) => {
 const handleCloudFileSelect = async (row: ListRes | undefined) => {
     if (!row) return;
     selectedCloudFile.value = row;
-    
-    // Construct URL and populate form
+
+    // URL is already included in the response from backend
     try {
-        const baseUrl = await sdkStore.sdk?.cloudCtl.getDownloadUrl();
-        if (baseUrl) {
-             let finalUrl = baseUrl;
-             if (!baseUrl.endsWith('/')) {
-                 finalUrl += '/';
-             }
-             finalUrl += row.hash;
-             
-             downloadForm.value.url = finalUrl;
-             downloadForm.value.name = row.fileName;
-             // We don't have SHA256 in ListRes directly (it has 'hash' which is likely SHA256 based on CloudFile.vue logic)
-             downloadForm.value.sha256 = row.hash; 
+        if ((row as any).url) {
+            downloadForm.value.url = (row as any).url;
+            downloadForm.value.name = row.fileName;
+            downloadForm.value.sha256 = row.hash;
         }
     } catch (e) {
         ElMessage.error('Failed to get download URL');
@@ -654,7 +725,9 @@ const selection = ref<any[]>([])
 const deviceTable = ref<InstanceType<typeof ElTable>>()
 
 const batchRunVisible = ref(false)
-const selectedScript = ref('')
+const selectedRpaId = ref<number | null>(null)
+const rpaRunMode = ref<'single' | 'loop'>('single')
+const batchRunLoading = ref(false)
 
 const s5ConfigVisible = ref(false)
 const s5DeviceId = ref(0)
@@ -699,18 +772,14 @@ const tableData = computed(() => {
 })
 
 const fetchDevices = async () => {
-  if (!sdkStore.sdk) return
+  if (!sdkStore.apiKey) return
   loading.value = true
-  
+
   // Sync tunnels
   checkActiveTunnels();
-  
+
   try {
-    const res = await sdkStore.sdk.userDeviceCtl.getUserDeviceList({
-      pageNum: currentPage.value,
-      pageSize: pageSize.value
-      // yunjiUserGroupId: -1
-    })
+    const res = await backendApi.getDeviceList()
     if (res) {
       rawTableData.value = res.records || []
       total.value = res.total || 0
@@ -759,6 +828,10 @@ const handleChangeOsSuccess = () => {
 }
 
 const handleBatchRun = () => {
+  // 加载 RPA 流程列表
+  rpaStore.loadFlows()
+  selectedRpaId.value = null
+  rpaRunMode.value = 'single'
   batchRunVisible.value = true
 }
 
@@ -766,9 +839,31 @@ const handleBatchAdb = () => {
   ElMessage.success(`Enabling ADB for ${selection.value.length} devices...`)
 }
 
-const confirmBatchRun = () => {
-  ElMessage.success(`Started script ${selectedScript.value} on ${selection.value.length} devices`)
-  batchRunVisible.value = false
+const getSelectedFlow = () => {
+  if (!selectedRpaId.value) return null
+  return rpaStore.flows.find(f => f.id === selectedRpaId.value)
+}
+
+const confirmBatchRun = async () => {
+  if (!selectedRpaId.value || selection.value.length === 0) return
+
+  batchRunLoading.value = true
+  try {
+    // 批量绑定并启动
+    for (const device of selection.value) {
+      await backendApi.bindDeviceRpa(device.deviceId, selectedRpaId.value, rpaRunMode.value)
+      await backendApi.startDeviceRpa(device.deviceId)
+    }
+    ElMessage.success(`已为 ${selection.value.length} 台设备启动 RPA 流程`)
+    batchRunVisible.value = false
+    // 刷新状态
+    rpaStore.loadDeviceStatuses()
+    clearSelection()
+  } catch (e: any) {
+    ElMessage.error('启动失败: ' + e.message)
+  } finally {
+    batchRunLoading.value = false
+  }
 }
 
 const handleSizeChange = (val: number) => {
@@ -790,8 +885,114 @@ const getOtherMappings = (deviceId: number) => {
     return ports.filter(p => p !== 9009 && p !== 5555);
 }
 
+// ========== RPA 状态相关 ==========
+const getRpaStatus = (deviceId: number): DeviceRpaStatus | undefined => {
+    return rpaStore.getDeviceStatus(deviceId);
+}
+
+const getRpaStatusType = (deviceId: number): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
+    const status = getRpaStatus(deviceId);
+    if (!status) return 'info';
+    switch (status.status) {
+        case 'running': return 'primary';
+        case 'paused': return 'warning';
+        case 'error': return 'danger';
+        case 'completed': return 'success';
+        default: return 'info';
+    }
+}
+
+const getRpaStatusText = (deviceId: number): string => {
+    const status = getRpaStatus(deviceId);
+    if (!status) return '-';
+    switch (status.status) {
+        case 'idle': return '空闲';
+        case 'running': return `运行中 ${status.currentStep + 1}/${status.totalSteps}`;
+        case 'paused': return '已暂停';
+        case 'error': return '错误';
+        case 'completed': return '已完成';
+        default: return status.status;
+    }
+}
+
+const getRpaProgress = (deviceId: number): number => {
+    const status = getRpaStatus(deviceId);
+    if (!status || status.totalSteps === 0) return 0;
+    return Math.round((status.currentStep / status.totalSteps) * 100);
+}
+
+// 格式化时长（秒 -> 可读格式）
+const formatDuration = (seconds: number): string => {
+    if (seconds <= 0) return '0s';
+    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 3600) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return s > 0 ? `${m}m${s}s` : `${m}m`;
+    }
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return m > 0 ? `${h}h${m}m` : `${h}h`;
+}
+
+// 计算平均耗时
+const getAvgTime = (deviceId: number): number => {
+    const status = getRpaStatus(deviceId);
+    if (!status || status.loopCount <= 0) return 0;
+    return Math.round(status.totalTime / status.loopCount);
+}
+
+// 计算当前循环耗时（实时）
+const getCurrentDuration = (deviceId: number): string => {
+    const status = getRpaStatus(deviceId);
+    if (!status) return '0s';
+
+    // 只有运行中才显示实时计时
+    if (status.status === 'running' && status.loopStartAt) {
+        const startTime = new Date(status.loopStartAt).getTime();
+        if (!isNaN(startTime)) {
+            const now = Date.now();
+            const elapsed = Math.floor((now - startTime) / 1000);
+            if (elapsed >= 0) {
+                return formatDuration(elapsed);
+            }
+        }
+    }
+
+    // 其他状态显示总耗时
+    if (status.totalTime > 0) {
+        return formatDuration(status.totalTime);
+    }
+
+    return '0s';
+}
+
+// 设置单元格样式，让操作列垂直居中
+const cellStyle = ({ column }: { column: any }): any => {
+    if (column.property === undefined && column.label === '操作') {
+        return { verticalAlign: 'middle' }
+    }
+    return { verticalAlign: 'top' }
+}
+
+// RPA 状态定时刷新
+let rpaRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
 onMounted(() => {
   fetchDevices()
+  // 加载 RPA 状态
+  rpaStore.loadDeviceStatuses()
+  // 每 3 秒刷新一次 RPA 状态
+  rpaRefreshTimer = setInterval(() => {
+    rpaStore.loadDeviceStatuses()
+  }, 3000)
+})
+
+onUnmounted(() => {
+  if (rpaRefreshTimer) {
+    clearInterval(rpaRefreshTimer)
+    rpaRefreshTimer = null
+  }
 })
 </script>
 
@@ -906,5 +1107,139 @@ onMounted(() => {
   border-top: 1px solid #f3f4f6;
   display: flex;
   justify-content: flex-end;
+}
+
+.rpa-status-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .rpa-main-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rpa-name {
+    font-size: 12px;
+    color: #6b7280;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rpa-detail-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .step-info {
+      font-size: 11px;
+      color: #374151;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      .sub-step {
+        color: #9ca3af;
+      }
+    }
+  }
+
+  .rpa-error-row {
+    margin-top: 4px;
+
+    .error-preview {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: #fef2f2;
+      border-radius: 4px;
+      cursor: pointer;
+
+      .error-icon {
+        color: #dc2626;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+
+      .error-text {
+        font-size: 11px;
+        color: #dc2626;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 200px;
+      }
+    }
+  }
+}
+
+.rpa-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+// RPA 错误内联样式
+.rpa-error-inline {
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 4px;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.error-detail {
+  .error-title {
+    font-weight: 600;
+    color: #dc2626;
+    margin-bottom: 8px;
+  }
+
+  .error-content {
+    font-size: 13px;
+    color: #374151;
+    line-height: 1.5;
+    word-break: break-all;
+  }
+}
+
+// 批量运行弹窗样式
+.batch-run-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  color: #0369a1;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.flow-preview {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 12px;
+
+  .flow-preview-title {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 8px;
+  }
+
+  .flow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .step-tag {
+      font-size: 11px;
+    }
+  }
 }
 </style>

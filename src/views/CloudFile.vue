@@ -6,17 +6,11 @@
         <div class="card-header">
           <span class="title">Cloud File Management</span>
           <div class="header-actions">
-            <el-upload
-              class="upload-demo"
-              action="#"
-              :show-file-list="false"
-              :http-request="handleUpload"
-              :disabled="uploading"
-            >
-              <el-button type="primary" :loading="uploading">
+            <el-tooltip content="上传功能暂不可用，请使用集控平台网页上传" placement="top">
+              <el-button type="primary" disabled>
                 <el-icon><Upload /></el-icon> Upload File
               </el-button>
-            </el-upload>
+            </el-tooltip>
             <el-button @click="fetchFileList" :icon="Refresh">Refresh</el-button>
           </div>
         </div>
@@ -38,11 +32,6 @@
         <el-table-column label="Actions" width="200" fixed="right">
           <template #default="scope">
             <el-button link type="primary" @click="handleCopyLink(scope.row)">Copy Link</el-button>
-            <el-popconfirm title="Are you sure to delete this file?" @confirm="handleDelete(scope.row)">
-              <template #reference>
-                <el-button link type="danger">Delete</el-button>
-              </template>
-            </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
@@ -53,22 +42,29 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useSdkStore } from '@/stores/sdkStore';
+import { backendApi } from '@/api/backendApi';
 import { ElMessage } from 'element-plus';
 import { Upload, Refresh } from '@element-plus/icons-vue';
-import type { UploadRequestOptions } from 'element-plus';
-import type { ListRes } from '@sdk/index'; // Import from alias root
+
+interface FileItem {
+  fileId: number;
+  fileName: string;
+  hash: string;
+  size: number;
+  addTime: number;
+  url?: string;
+}
 
 const sdkStore = useSdkStore();
-const fileList = ref<ListRes[]>([]);
+const fileList = ref<FileItem[]>([]);
 const loading = ref(false);
-const uploading = ref(false);
 
 const fetchFileList = async () => {
-  if (!sdkStore.sdk) return;
-  
+  if (!sdkStore.apiKey) return;
+
   loading.value = true;
   try {
-    const res = await sdkStore.sdk.cloudCtl.list({});
+    const res = await backendApi.getCloudFiles({});
     fileList.value = res || [];
   } catch (error: any) {
     ElMessage.error('Failed to fetch file list: ' + error.message);
@@ -77,85 +73,18 @@ const fetchFileList = async () => {
   }
 };
 
-const calculateHash = async (file: File): Promise<string> => {
-  const buffer = await file.arrayBuffer();
-  // Using SHA-256.
-  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
-};
-
-const handleUpload = async (options: UploadRequestOptions) => {
-  if (!sdkStore.sdk) {
-      ElMessage.error("SDK not initialized");
-      return;
-  }
-  
-  const file = options.file;
-  uploading.value = true;
+const handleCopyLink = async (row: FileItem) => {
   try {
-    const hash = await calculateHash(file);
-    const fileName = file.name;
-
-    // 1. Get Upload URL
-    const uploadUrl = await sdkStore.sdk.cloudCtl.getUploadUrl({ hash, fileName });
-    if (!uploadUrl) {
-      throw new Error('Failed to get upload URL');
+    // URL is already included in the response from backend
+    const url = row.url || '';
+    if (url) {
+      await navigator.clipboard.writeText(url);
+      ElMessage.success('Link copied to clipboard');
+    } else {
+      ElMessage.warning('No download URL available');
     }
-
-    // 2. Upload to COS/S3
-    const response = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type || 'application/octet-stream',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Upload failed with status: ${response.status}`);
-    }
-
-    // 3. Confirm/Add File
-    await sdkStore.sdk.cloudCtl.addCosFile({ hash, fileName });
-
-    ElMessage.success('File uploaded successfully');
-    fetchFileList();
   } catch (error: any) {
-    console.error(error);
-    ElMessage.error('Upload failed: ' + error.message);
-  } finally {
-    uploading.value = false;
-  }
-};
-
-const handleDelete = async (row: ListRes) => {
-  if (!sdkStore.sdk) return;
-  try {
-    await sdkStore.sdk.cloudCtl.del({ fileIds: [row.fileId] });
-    ElMessage.success('File deleted');
-    fetchFileList();
-  } catch (error: any) {
-    ElMessage.error('Delete failed: ' + error.message);
-  }
-};
-
-const handleCopyLink = async (row: ListRes) => {
-  if (!sdkStore.sdk) return;
-  try {
-    const baseUrl = await sdkStore.sdk.cloudCtl.getDownloadUrl();
-    
-    let finalUrl = baseUrl;
-    if (baseUrl && !baseUrl.endsWith('/')) {
-        finalUrl += '/';
-    }
-    finalUrl += row.hash;
-
-    await navigator.clipboard.writeText(finalUrl);
-    ElMessage.success('Link copied to clipboard: ' + finalUrl);
-  } catch (error: any) {
-    ElMessage.error('Failed to get download URL: ' + error.message);
+    ElMessage.error('Failed to copy link: ' + error.message);
   }
 };
 
@@ -173,19 +102,8 @@ const formatDate = (timestamp: number) => {
 };
 
 onMounted(() => {
-  if (sdkStore.isConnected) {
+  if (sdkStore.apiKey) {
     fetchFileList();
-  } else {
-    // Watch or wait for connection? 
-    // Usually SDK is ready when this view is loaded if guarded by login.
-    // But for safety:
-    const check = setInterval(() => {
-        if (sdkStore.isConnected) {
-            clearInterval(check);
-            fetchFileList();
-        }
-    }, 500);
-    setTimeout(() => clearInterval(check), 5000);
   }
 });
 </script>

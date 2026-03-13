@@ -347,7 +347,14 @@ import { useSdkStore } from '@/stores/sdkStore'
 import { ElMessage } from 'element-plus'
 import ApiDocs from './ApiDocs.vue'
 
-const wsUrl = ref('ws://127.0.0.1:1001/api/unified/ws')
+// 动态获取 WebSocket 地址
+const getDefaultWsUrl = () => {
+  const host = window.location.hostname || '127.0.0.1'
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${host}:1001/api/unified/ws`
+}
+
+const wsUrl = ref(getDefaultWsUrl())
 const isConnected = ref(false)
 const token = ref('')
 const serverHost = ref(localStorage.getItem('jpy_ws_host') || localStorage.getItem('last_host') || 'minio.accjs.cn')
