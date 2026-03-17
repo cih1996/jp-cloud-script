@@ -58,6 +58,11 @@ const router = createRouter({
           path: 'logs',
           name: 'logs',
           component: () => import('@/views/system/LogView.vue')
+        },
+        {
+          path: 'protocol',
+          name: 'protocol',
+          component: () => import('@/views/system/ProtocolDocView.vue')
         }
       ]
     }

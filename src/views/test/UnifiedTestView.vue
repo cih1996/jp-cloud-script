@@ -300,6 +300,101 @@
                   </el-form>
                 </el-tab-pane>
 
+                <el-tab-pane label="应用备份" name="backupApp">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item label="包名">
+                      <el-input v-model="formData.packageName" placeholder="com.example.app" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('backupApp')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
+
+                <el-tab-pane label="备份状态" name="getBackupAppStatus">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item label="包名">
+                      <el-input v-model="formData.packageName" placeholder="com.example.app" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getBackupAppStatus')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
+
+                <el-tab-pane label="备份列表" name="getBackupList">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getBackupList')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
+
+                <el-tab-pane label="应用还原" name="restoreApp">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item label="包名">
+                      <el-input v-model="formData.packageName" placeholder="com.example.app" />
+                    </el-form-item>
+                    <el-form-item label="备份路径">
+                      <el-input v-model="formData.backupPath" placeholder="/sdcard/backup/xxx.tar.gz" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('restoreApp')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
+
+                <el-tab-pane label="还原状态" name="getRestoreAppStatus">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item label="包名">
+                      <el-input v-model="formData.packageName" placeholder="com.example.app" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getRestoreAppStatus')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
+
+                <el-tab-pane label="还原机型" name="changeOldOsReq">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item label="改机ID">
+                      <el-input-number v-model="formData.changeOsId" :min="1" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('changeOldOsReq')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
+
+                <el-tab-pane label="机型列表" name="getChangeOsList">
+                  <el-form label-width="100px">
+                    <el-form-item :label="$t('testView.deviceId')">
+                      <el-input-number v-model="formData.deviceId" :min="1" />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="sendGeneric('getChangeOsList')">{{ $t('testView.send') }}</el-button>
+                    </el-form-item>
+                  </el-form>
+                </el-tab-pane>
+
                 <el-tab-pane :label="$t('rpa.customJson')" name="customJson">
                   <el-input type="textarea" v-model="formData.customJson" :rows="10" />
                   <div class="mt-2">
@@ -402,7 +497,9 @@ const formData = reactive({
   downloadUrl: 'https://example.com/app.apk',
   downloadSha256: '',
   downloadInstall: true,
-  customJson: '{"type": "your_custom_type", "data": {}}'
+  customJson: '{"type": "your_custom_type", "data": {}}',
+  backupPath: '',
+  changeOsId: 0
 })
 
 const changePhoneForm = reactive({
@@ -490,6 +587,27 @@ const sendGeneric = (type: string) => {
         data = { deviceId: formData.deviceId, s5Url: formData.s5Url, nOutSwID: formData.nOutSwID }
         break
       case 'getS5outLine':
+        data = { deviceId: formData.deviceId }
+        break
+      case 'backupApp':
+        data = { deviceId: formData.deviceId, packageName: formData.packageName }
+        break
+      case 'getBackupAppStatus':
+        data = { deviceId: formData.deviceId, packageName: formData.packageName }
+        break
+      case 'getBackupList':
+        data = { deviceId: formData.deviceId }
+        break
+      case 'restoreApp':
+        data = { deviceId: formData.deviceId, packageName: formData.packageName, path: formData.backupPath }
+        break
+      case 'getRestoreAppStatus':
+        data = { deviceId: formData.deviceId, packageName: formData.packageName }
+        break
+      case 'changeOldOsReq':
+        data = { deviceId: formData.deviceId, changeOsId: formData.changeOsId }
+        break
+      case 'getChangeOsList':
         data = { deviceId: formData.deviceId }
         break
       case 'customJson':

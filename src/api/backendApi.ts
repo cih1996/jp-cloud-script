@@ -257,5 +257,84 @@ export const backendApi = {
         const res = await fetch(`${getBaseUrl()}/api/rpa/engine/stop`, { method: 'POST' })
         const json = await res.json()
         return json
+    },
+
+    // ========== 设备 WebSocket API ==========
+
+    // 获取脚本 APK 连接的设备列表
+    async getWsDevices() {
+        const res = await fetch(`${getBaseUrl()}/api/devicews/devices`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 获取单个脚本 APK 设备信息
+    async getWsDevice(deviceId: string | number) {
+        const res = await fetch(`${getBaseUrl()}/api/devicews/devices/${deviceId}`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 请求设备截图（通过脚本 APK）
+    async requestWsScreenshot(deviceId: string | number) {
+        const res = await fetch(`${getBaseUrl()}/api/devicews/devices/${deviceId}/screenshot`, {
+            method: 'POST'
+        })
+        const json = await res.json()
+        return json
+    },
+
+    // 获取设备截图数据
+    async getWsScreenshot(deviceId: string | number) {
+        const res = await fetch(`${getBaseUrl()}/api/devicews/devices/${deviceId}/screenshot`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 发送调试脚本执行
+    async sendWsDebug(deviceId: string | number, debugId: string, code: string, timeout = 30000) {
+        const res = await fetch(`${getBaseUrl()}/api/devicews/devices/${deviceId}/debug`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ debugId, code, timeout })
+        })
+        const json = await res.json()
+        return json
+    },
+
+    // 获取调试执行结果
+    async getWsDebugResult(deviceId: string | number, debugId: string) {
+        const res = await fetch(`${getBaseUrl()}/api/devicews/devices/${deviceId}/debug/${debugId}`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 发送命令到设备
+    async sendWsCommand(deviceId: string | number, cmd: string, params?: Record<string, any>) {
+        const res = await fetch(`${getBaseUrl()}/api/devicews/devices/${deviceId}/command`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cmd, params })
+        })
+        const json = await res.json()
+        return json
+    },
+
+    // 请求设备节点信息
+    async requestWsNodes(deviceId: string | number, params?: { requestId?: string; windowId?: number; visibleOnly?: boolean }) {
+        const res = await fetch(`${getBaseUrl()}/api/devicews/devices/${deviceId}/nodes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(params || {})
+        })
+        const json = await res.json()
+        return json
+    },
+
+    // 获取设备节点信息
+    async getWsNodes(deviceId: string | number) {
+        const res = await fetch(`${getBaseUrl()}/api/devicews/devices/${deviceId}/nodes`)
+        const json = await res.json()
+        return json.data
     }
 }

@@ -89,7 +89,21 @@
             </div>
           </template>
         </el-table-column>
-        <!-- UUID Removed as per request -->
+        <!-- UUID 列 -->
+        <el-table-column prop="deviceInfo.uuid" label="UUID" min-width="120">
+          <template #default="scope">
+            <span class="mono-text text-xs">{{ scope.row.deviceInfo?.uuid || '-' }}</span>
+          </template>
+        </el-table-column>
+        <!-- WebSocket 连接状态 -->
+        <el-table-column label="WS状态" width="90">
+          <template #default="scope">
+            <div class="ws-status" :class="{ connected: isDeviceWsConnected(scope.row.deviceInfo?.uuid) }">
+              <span class="ws-dot"></span>
+              {{ isDeviceWsConnected(scope.row.deviceInfo?.uuid) ? '已连接' : '未连接' }}
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="deviceInfo.brand" :label="$t('device.brand')" min-width="100" />
         <el-table-column prop="deviceInfo.version" :label="$t('device.version')" min-width="100" />
         <el-table-column prop="deviceInfo.online" :label="$t('device.status')" min-width="100">
@@ -414,6 +428,9 @@ const {
 } = useDeviceTunnel()
 
 const loading = ref(false)
+
+// WebSocket 设备连接状态
+const wsDevices = ref<Map<string, any>>(new Map()) // serialno -> device info
 
 const changeOsVisible = ref(false)
 const changeOsDeviceIds = ref<number[]>([])
@@ -975,16 +992,44 @@ const cellStyle = ({ column }: { column: any }): any => {
     return { verticalAlign: 'top' }
 }
 
+// 获取 WebSocket 连接的设备列表
+const fetchWsDevices = async () => {
+  try {
+    const res = await fetch('/api/devicews/devices')
+    const json = await res.json()
+    if (json.code === 200 && Array.isArray(json.data)) {
+      const map = new Map<string, any>()
+      for (const d of json.data) {
+        if (d.serialno) {
+          map.set(d.serialno, d)
+        }
+      }
+      wsDevices.value = map
+    }
+  } catch (e) {
+    console.error('Failed to fetch WS devices:', e)
+  }
+}
+
+// 判断设备是否通过 WebSocket 连接
+// UUID 格式通常是 serialno，需要做 CRC32 hash 匹配或直接用 serialno
+const isDeviceWsConnected = (uuid: string | undefined): boolean => {
+  if (!uuid) return false
+  return wsDevices.value.has(uuid)
+}
+
 // RPA 状态定时刷新
 let rpaRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
   fetchDevices()
+  fetchWsDevices()
   // 加载 RPA 状态
   rpaStore.loadDeviceStatuses()
-  // 每 3 秒刷新一次 RPA 状态
+  // 每 3 秒刷新一次 RPA 状态和 WS 设备状态
   rpaRefreshTimer = setInterval(() => {
     rpaStore.loadDeviceStatuses()
+    fetchWsDevices()
   }, 3000)
 })
 
@@ -1072,20 +1117,46 @@ onUnmounted(() => {
   gap: 6px;
   font-size: 13px;
   color: #6b7280;
-  
+
   .status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background-color: #d1d5db;
   }
-  
+
   &.online {
     color: #059669;
     .status-dot {
       background-color: #10b981;
     }
   }
+}
+
+.ws-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #9ca3af;
+
+  .ws-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #d1d5db;
+  }
+
+  &.connected {
+    color: #2563eb;
+    .ws-dot {
+      background-color: #3b82f6;
+    }
+  }
+}
+
+.text-xs {
+  font-size: 11px;
 }
 
 .mono-text {

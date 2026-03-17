@@ -43,6 +43,10 @@
           <el-icon><Document /></el-icon>
           <span>{{ $t('menu.logs') }}</span>
         </el-menu-item>
+        <el-menu-item index="/protocol">
+          <el-icon><Notebook /></el-icon>
+          <span>协议手册</span>
+        </el-menu-item>
       </el-menu>
       
       <ServiceStatus />
@@ -100,7 +104,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSdkStore } from '@/stores/sdkStore'
 import { useI18n } from 'vue-i18n'
-import { Monitor, ArrowDown, Files, VideoPlay, Connection, Document, Pointer } from '@element-plus/icons-vue'
+import { Monitor, ArrowDown, Files, VideoPlay, Connection, Document, Pointer, Notebook } from '@element-plus/icons-vue'
 import ServiceStatus from '@/components/ServiceStatus.vue'
 
 const route = useRoute()
