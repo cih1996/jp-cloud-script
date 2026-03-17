@@ -336,5 +336,55 @@ export const backendApi = {
         const res = await fetch(`${getBaseUrl()}/api/devicews/devices/${deviceId}/nodes`)
         const json = await res.json()
         return json.data
+    },
+
+    // ========== 代码仓库 API ==========
+
+    // 获取脚本列表
+    async getScripts(keyword?: string) {
+        const url = keyword
+            ? `${getBaseUrl()}/api/rpa/scripts?keyword=${encodeURIComponent(keyword)}`
+            : `${getBaseUrl()}/api/rpa/scripts`
+        const res = await fetch(url)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 获取单个脚本
+    async getScript(id: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/scripts/${id}`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 创建脚本
+    async createScript(data: { name: string; description?: string; code: string; timeout?: number }) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/scripts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        const json = await res.json()
+        return json.data
+    },
+
+    // 更新脚本
+    async updateScript(id: number, data: { name: string; description?: string; code: string; timeout?: number }) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/scripts/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        const json = await res.json()
+        return json.data
+    },
+
+    // 删除脚本
+    async deleteScript(id: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/scripts/${id}`, {
+            method: 'DELETE'
+        })
+        const json = await res.json()
+        return json
     }
 }

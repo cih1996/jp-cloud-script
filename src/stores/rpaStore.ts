@@ -17,8 +17,13 @@ export type StepType =
   | 'http_request'
   // 脚本执行
   | 'shell'
-  | 'run_script_and_wait'
-  | 'custom_js';
+  | 'start_bot'
+  | 'run_script'
+  | 'custom_js'
+  // 流程控制
+  | 'execute_repo_script'
+  | 'set_variables'
+  | 'condition_check';
 
 export interface RpaStep {
   id: string;

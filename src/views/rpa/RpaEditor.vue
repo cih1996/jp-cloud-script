@@ -439,30 +439,44 @@
              </template>
 
              <!-- Run Script -->
-             <template v-if="step.type === 'run_script_and_wait'">
+             <template v-if="step.type === 'start_bot'">
                <div class="ios-field">
-                 <label>脚本来源</label>
-                 <el-radio-group v-model="step.params.scriptSource" :disabled="!isEditing">
-                   <el-radio value="cloud">云文件</el-radio>
-                   <el-radio value="url">URL地址</el-radio>
-                 </el-radio-group>
-               </div>
-               <div class="ios-field has-button" v-if="step.params.scriptSource === 'cloud'">
-                 <label>选择脚本</label>
-                 <div class="input-wrapper">
-                   <el-input v-model="step.params.scriptName" readonly placeholder="点击选择云文件" />
-                   <el-button v-if="isEditing" type="primary" link @click="openCloudSelector(index)">选择</el-button>
-                 </div>
-               </div>
-               <div class="ios-field" v-else>
-                 <label>脚本URL</label>
-                 <el-input v-model="step.params.scriptUrl" placeholder="https://example.com/script.lua" :readonly="!isEditing" />
+                 <label>服务器地址</label>
+                 <el-input v-model="step.params.serverUrl" placeholder="ws://192.168.1.100:1003/ws/device" :readonly="!isEditing" />
                </div>
                <div class="ios-field">
-                 <label>脚本参数 (JSON)</label>
-                 <el-input type="textarea" v-model="step.params.scriptParams" :rows="2" placeholder='{"key": "value"}' :readonly="!isEditing" />
+                 <label>APK包名</label>
+                 <el-input v-model="step.params.packageName" placeholder="com.jpy.bot（默认）" :readonly="!isEditing" />
                </div>
-                <div class="ios-hint">脚本中可通过 deviceId 变量获取当前设备ID</div>
+               <div class="ios-field">
+                 <label>设备别名（可选）</label>
+                 <el-input v-model="step.params.deviceName" placeholder="留空则不设置" :readonly="!isEditing" />
+               </div>
+               <div class="ios-field">
+                 <label>等待连接次数</label>
+                 <el-input-number v-model="step.params.maxRetries" :min="1" :max="30" :disabled="!isEditing" />
+               </div>
+               <div class="ios-hint">写入配置到 /sdcard/accbot/config.json，启动脚本APK，等待WebSocket连接</div>
+             </template>
+
+             <!-- Execute Script via WebSocket -->
+             <template v-if="step.type === 'run_script'">
+               <div class="ios-field">
+                 <label>任务名称</label>
+                 <el-input v-model="step.params.taskName" placeholder="脚本任务名称（用于日志追踪）" :readonly="!isEditing" />
+               </div>
+               <div class="ios-field code-field">
+                 <label>脚本代码</label>
+                 <el-input type="textarea" v-model="step.params.code" :rows="10" class="code-font" :readonly="!isEditing" placeholder="// 在此编写脚本代码&#10;// 设备端会执行此代码" />
+               </div>
+               <div class="ios-field">
+                 <label>超时时间（毫秒）</label>
+                 <el-input-number v-model="step.params.timeout" :min="1000" :max="600000" :step="1000" :disabled="!isEditing" style="width: 100%" />
+               </div>
+               <div class="ios-hint">
+                 <p>通过 WebSocket 将脚本推送到设备执行</p>
+                 <p>小脚本（&lt;10KB）直接推送代码，大脚本先缓存后推送 hash</p>
+               </div>
              </template>
 
              <!-- Get Root -->
@@ -474,6 +488,114 @@
                <div class="ios-hint">
                  <p>为指定应用授予 Root 权限，常用于脚本执行器等需要高权限的应用</p>
                  <p>默认包名 com.android.shell 用于 Shell 命令提权</p>
+               </div>
+             </template>
+
+             <!-- Execute Repo Script -->
+             <template v-if="step.type === 'execute_repo_script'">
+               <div class="ios-field">
+                 <label>选择脚本</label>
+                 <el-select v-model="step.params.scriptId" placeholder="选择仓库中的脚本" :disabled="!isEditing" style="width: 100%">
+                   <el-option v-for="s in scriptList" :key="s.id" :label="s.name" :value="s.id">
+                     <span>{{ s.name }}</span>
+                     <span style="float: right; color: #8e8e93; font-size: 12px">{{ s.timeout }}ms</span>
+                   </el-option>
+                 </el-select>
+               </div>
+               <div class="ios-field">
+                 <label>超时时间（毫秒，可选）</label>
+                 <el-input-number v-model="step.params.timeout" :min="1000" :max="600000" :step="1000" :disabled="!isEditing" style="width: 100%" placeholder="留空使用脚本默认值" />
+               </div>
+               <div class="ios-hint">
+                 <p>从代码仓库加载脚本并推送到设备执行</p>
+                 <p>脚本返回值会保存到流程变量，可在后续步骤中通过 <code v-pre>{{result}}</code> 引用</p>
+               </div>
+             </template>
+
+             <!-- Set Variables -->
+             <template v-if="step.type === 'set_variables'">
+               <div class="ios-field">
+                 <label>变量设置（JSON 格式）</label>
+                 <el-input
+                   type="textarea"
+                   v-model="step.params.variablesJson"
+                   :rows="6"
+                   class="code-font"
+                   :readonly="!isEditing"
+                   placeholder='{"username": "test", "count": 10, "enabled": true}'
+                 />
+               </div>
+               <div class="ios-hint">
+                 <p>设置流程变量，供后续步骤使用</p>
+                 <p>在其他步骤中通过 <code v-pre>{{变量名}}</code> 引用，如 <code v-pre>{{username}}</code></p>
+               </div>
+             </template>
+
+             <!-- Condition Check -->
+             <template v-if="step.type === 'condition_check'">
+               <div class="ios-field">
+                 <label>变量名</label>
+                 <el-input v-model="step.params.variable" placeholder="要检查的变量名，如 result" :readonly="!isEditing" />
+               </div>
+               <div class="ios-field">
+                 <label>运算符</label>
+                 <el-select v-model="step.params.operator" :disabled="!isEditing" style="width: 100%">
+                   <el-option-group label="比较">
+                     <el-option value="eq" label="等于 (==)" />
+                     <el-option value="ne" label="不等于 (!=)" />
+                     <el-option value="gt" label="大于 (>)" />
+                     <el-option value="lt" label="小于 (<)" />
+                     <el-option value="gte" label="大于等于 (>=)" />
+                     <el-option value="lte" label="小于等于 (<=)" />
+                   </el-option-group>
+                   <el-option-group label="字符串">
+                     <el-option value="contains" label="包含" />
+                     <el-option value="not_contains" label="不包含" />
+                   </el-option-group>
+                   <el-option-group label="空值">
+                     <el-option value="empty" label="为空" />
+                     <el-option value="not_empty" label="不为空" />
+                   </el-option-group>
+                   <el-option-group label="布尔">
+                     <el-option value="true" label="为真" />
+                     <el-option value="false" label="为假" />
+                   </el-option-group>
+                 </el-select>
+               </div>
+               <div class="ios-field" v-if="!['empty', 'not_empty', 'true', 'false'].includes(step.params.operator)">
+                 <label>比较值</label>
+                 <el-input v-model="step.params.value" placeholder="要比较的值" :readonly="!isEditing" />
+               </div>
+               <div class="ios-field">
+                 <label>条件为真时</label>
+                 <el-select v-model="step.params.onTrue" :disabled="!isEditing" style="width: 100%">
+                   <el-option value="continue" label="继续执行下一步" />
+                   <el-option value="skip_next" label="跳过下一步" />
+                   <el-option value="jump_to_step" label="跳转到指定步骤" />
+                   <el-option value="stop_success" label="成功停止流程" />
+                   <el-option value="stop_error" label="错误停止流程" />
+                 </el-select>
+               </div>
+               <div class="ios-field" v-if="step.params.onTrue === 'jump_to_step'">
+                 <label>跳转到步骤（索引从0开始）</label>
+                 <el-input-number v-model="step.params.jumpStepTrue" :min="0" :disabled="!isEditing" style="width: 100%" />
+               </div>
+               <div class="ios-field">
+                 <label>条件为假时</label>
+                 <el-select v-model="step.params.onFalse" :disabled="!isEditing" style="width: 100%">
+                   <el-option value="continue" label="继续执行下一步" />
+                   <el-option value="skip_next" label="跳过下一步" />
+                   <el-option value="jump_to_step" label="跳转到指定步骤" />
+                   <el-option value="stop_success" label="成功停止流程" />
+                   <el-option value="stop_error" label="错误停止流程" />
+                 </el-select>
+               </div>
+               <div class="ios-field" v-if="step.params.onFalse === 'jump_to_step'">
+                 <label>跳转到步骤（索引从0开始）</label>
+                 <el-input-number v-model="step.params.jumpStepFalse" :min="0" :disabled="!isEditing" style="width: 100%" />
+               </div>
+               <div class="ios-hint">
+                 <p>根据变量值判断条件，控制流程走向</p>
                </div>
              </template>
           </div>
@@ -579,6 +701,15 @@ const s5OutLines = ref<S5OutLine[]>([]);
 const s5OutLinesLoading = ref(false);
 const s5OutLinesError = ref('');
 
+// 脚本仓库列表
+interface ScriptItem {
+  id: number;
+  name: string;
+  description: string;
+  timeout: number;
+}
+const scriptList = ref<ScriptItem[]>([]);
+
 const runDialogVisible = ref(false);
 
 // 改机相关数据
@@ -596,6 +727,12 @@ const displaySteps = computed(() => isEditing.value ? editingForm.value.steps : 
 const startEditing = () => {
     if (task.value) {
         editingForm.value = JSON.parse(JSON.stringify(task.value));
+        // 处理 set_variables 步骤：将 variables 对象转换为 JSON 字符串用于编辑
+        for (const step of editingForm.value.steps) {
+            if (step.type === 'set_variables' && step.params.variables && !step.params.variablesJson) {
+                step.params.variablesJson = JSON.stringify(step.params.variables, null, 2);
+            }
+        }
         isEditing.value = true;
     }
 };
@@ -609,6 +746,19 @@ const saveTask = () => {
         ElMessage.warning(t('rpa.messages.taskNameRequired'));
         return;
     }
+
+    // 处理 set_variables 步骤：将 JSON 字符串转换为对象
+    for (const step of editingForm.value.steps) {
+        if (step.type === 'set_variables' && step.params.variablesJson) {
+            try {
+                step.params.variables = JSON.parse(step.params.variablesJson);
+            } catch (e) {
+                ElMessage.error(`步骤 "${step.name}" 的变量 JSON 格式错误`);
+                return;
+            }
+        }
+    }
+
     rpaStore.updateTask(editingForm.value);
     isEditing.value = false;
     ElMessage.success(t('common.success'));
@@ -635,10 +785,15 @@ const addStep = (type: string) => {
     if (type === 'set_proxy_and_wait') newStep.params = { proxySource: 'variable', s5Url: '', nOutSwID: 0 };
     if (type === 'set_location') newStep.params = { locationSource: 'direct', lat: 39.916527, lng: 116.397128, enableRandom: false, randomRange: 5 };
     if (type === 'install_app_and_wait') newStep.params = { appSource: 'cloud', url: '', fileName: '', sha256: '' };
-    if (type === 'run_script_and_wait') newStep.params = { scriptSource: 'cloud', scriptUrl: '', scriptName: '', scriptParams: '' };
+    if (type === 'start_bot') newStep.params = { serverUrl: '', packageName: '', deviceName: '', maxRetries: 10 };
+    if (type === 'run_script') newStep.params = { taskName: '', code: '', timeout: 60000 };
     if (type === 'http_request') newStep.params = { method: 'GET', url: '', headers: '', body: '', extractPath: '', outputVar: '' };
     if (type === 'custom_js') newStep.params = { code: '// Use context.variables.lastResult for previous output\n// context.variables.myVar = "value";\nreturn "done";' };
     if (type === 'get_root') newStep.params = { packageName: 'com.android.shell' };
+    // 新增步骤类型
+    if (type === 'execute_repo_script') newStep.params = { scriptId: null, timeout: null };
+    if (type === 'set_variables') newStep.params = { variablesJson: '{\n  "key": "value"\n}' };
+    if (type === 'condition_check') newStep.params = { variable: '', operator: 'eq', value: '', onTrue: 'continue', onFalse: 'stop_error', jumpStepTrue: 0, jumpStepFalse: 0 };
 
     editingForm.value.steps.push(newStep);
 };
@@ -745,9 +900,6 @@ const handleCloudFileSelect = (file: ListRes) => {
                 step.params.fileName = file.fileName;
                 step.params.url = fileWithUrl.url || '';
                 step.params.sha256 = file.hash;
-            } else if (step.type === 'run_script_and_wait') {
-                step.params.scriptName = file.fileName;
-                step.params.scriptUrl = fileWithUrl.url || '';
             }
         }
         cloudSelectorVisible.value = false;
@@ -907,10 +1059,21 @@ const handleAndroidVersionChange = (version: string, step: RpaStep) => {
   step.params.version = version;
 };
 
+// 加载脚本仓库列表
+const loadScriptList = async () => {
+  try {
+    const data = await backendApi.getScripts();
+    scriptList.value = data || [];
+  } catch (e) {
+    console.error('Failed to load scripts', e);
+  }
+};
+
 // 初始化加载数据
 onMounted(() => {
   loadTimezones();
   loadLanguages();
+  loadScriptList();
 });
 </script>
 

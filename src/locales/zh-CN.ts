@@ -212,7 +212,8 @@ export default {
     categories: {
       system: '系统',
       network: '网络',
-      scripting: '脚本'
+      scripting: '脚本',
+      flow: '流程控制'
     },
     messages: {
       testDeviceNotFound: '未找到选定的测试设备',

@@ -90,9 +90,9 @@
       
       <el-main class="main-content">
         <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
+          <keep-alive :include="['DeviceControlView', 'RpaView', 'UnifiedTestView']">
             <component :is="Component" />
-          </transition>
+          </keep-alive>
         </router-view>
       </el-main>
     </el-container>

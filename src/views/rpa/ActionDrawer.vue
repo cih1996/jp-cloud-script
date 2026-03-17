@@ -71,7 +71,13 @@ const actionCategories = computed(() => ({
     ],
     'scripting': [
         { type: 'shell', label: 'Shell命令' },
-        { type: 'run_script_and_wait', label: '运行脚本' }
+        { type: 'start_bot', label: '启动脚本' },
+        { type: 'run_script', label: '执行脚本' },
+        { type: 'execute_repo_script', label: '仓库脚本' }
+    ],
+    'flow': [
+        { type: 'set_variables', label: '设置变量' },
+        { type: 'condition_check', label: '条件判断' }
     ]
 }));
 

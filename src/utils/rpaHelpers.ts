@@ -1,5 +1,5 @@
 import {
-  Monitor, Download, Connection, Refresh, Link, EditPen, Location, Setting, VideoPlay, Key
+  Monitor, Download, Connection, Refresh, Link, EditPen, Location, Setting, VideoPlay, Key, Cpu, Document, Switch, SetUp
 } from '@element-plus/icons-vue';
 
 export const getStepStyle = (type: string) => {
@@ -11,10 +11,15 @@ export const getStepStyle = (type: string) => {
         case 'set_proxy_and_wait': return { icon: Connection, color: '#7c3aed', bg: '#f5f3ff' };
         case 'set_location': return { icon: Location, color: '#dc2626', bg: '#fef2f2' };
         case 'install_app_and_wait': return { icon: Setting, color: '#0d9488', bg: '#f0fdfa' };
-        case 'run_script_and_wait': return { icon: VideoPlay, color: '#2563eb', bg: '#eff6ff' };
+        case 'start_bot': return { icon: VideoPlay, color: '#2563eb', bg: '#eff6ff' };
+        case 'run_script': return { icon: Cpu, color: '#059669', bg: '#ecfdf5' };
         case 'http_request': return { icon: Link, color: '#16a34a', bg: '#f0fdf4' };
         case 'custom_js': return { icon: EditPen, color: '#9333ea', bg: '#faf5ff' };
         case 'get_root': return { icon: Key, color: '#b91c1c', bg: '#fef2f2' };
+        // 新增步骤类型
+        case 'execute_repo_script': return { icon: Document, color: '#0284c7', bg: '#e0f2fe' };
+        case 'set_variables': return { icon: SetUp, color: '#ca8a04', bg: '#fef9c3' };
+        case 'condition_check': return { icon: Switch, color: '#7c3aed', bg: '#ede9fe' };
         default: return { icon: Connection, color: '#6b7280', bg: '#f9fafb' };
     }
 };
@@ -38,10 +43,15 @@ export const formatStepType = (type: string, _t?: (key: string) => string) => {
         set_proxy_and_wait: '设置代理',
         set_location: '设置定位',
         install_app_and_wait: '安装应用',
-        run_script_and_wait: '运行脚本',
+        start_bot: '启动脚本',
+        run_script: '执行脚本',
         http_request: 'HTTP请求',
         custom_js: '自定义JS',
-        get_root: '应用提权'
+        get_root: '应用提权',
+        // 新增步骤类型
+        execute_repo_script: '仓库脚本',
+        set_variables: '设置变量',
+        condition_check: '条件判断'
     };
     return map[type] || type;
 };

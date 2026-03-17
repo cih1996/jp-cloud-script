@@ -193,7 +193,8 @@ export default {
     categories: {
       system: 'System',
       network: 'Network',
-      scripting: 'Scripting'
+      scripting: 'Scripting',
+      flow: 'Flow Control'
     },
     messages: {
       testDeviceNotFound: 'Selected test device not found',
