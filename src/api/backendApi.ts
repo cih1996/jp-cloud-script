@@ -386,5 +386,21 @@ export const backendApi = {
         })
         const json = await res.json()
         return json
+    },
+
+    // ========== RPA 执行历史 API ==========
+
+    // 获取所有执行历史
+    async getRpaHistory(limit = 50) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/history?limit=${limit}`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 获取设备执行历史
+    async getDeviceRpaHistory(deviceId: number, limit = 20) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/devices/${deviceId}/history?limit=${limit}`)
+        const json = await res.json()
+        return json.data
     }
 }

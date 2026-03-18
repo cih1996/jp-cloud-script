@@ -13,7 +13,11 @@ export default {
     success: 'Success',
     error: 'Error',
     serviceConnected: 'Local Service Connected',
-    serviceDisconnected: 'Local Service Disconnected'
+    serviceDisconnected: 'Local Service Disconnected',
+    total: 'Total',
+    records: 'records',
+    startTime: 'Start Time',
+    status: 'Status'
   },
   login: {
     title: 'JPY Cloud Management',
@@ -127,6 +131,18 @@ export default {
   },
   rpa: {
     allShortcuts: 'All Shortcuts',
+    flows: 'Flows',
+    history: 'History',
+    executionHistory: 'Execution History',
+    flowName: 'Flow Name',
+    progress: 'Progress',
+    result: 'Result',
+    duration: 'Duration',
+    noHistory: 'No execution history',
+    statusRunning: 'Running',
+    statusSuccess: 'Success',
+    statusFailed: 'Failed',
+    statusCancelled: 'Cancelled',
     shortcutName: 'Shortcut Name',
     testDevice: 'Test Device',
     edit: 'Edit',

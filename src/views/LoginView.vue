@@ -39,11 +39,10 @@
             </el-form-item>
 
             <el-form-item>
-              <el-input 
-                v-model="form.apiKey" 
-                :placeholder="$t('login.apiKeyPlaceholder')" 
-                type="password"
-                show-password
+              <el-input
+                v-model="form.apiKey"
+                :placeholder="$t('login.apiKeyPlaceholder')"
+                type="text"
                 :prefix-icon="Key"
               />
             </el-form-item>

@@ -13,7 +13,11 @@ export default {
     success: '成功',
     error: '错误',
     serviceConnected: '本地服务已连接',
-    serviceDisconnected: '本地服务未连接'
+    serviceDisconnected: '本地服务未连接',
+    total: '共',
+    records: '条记录',
+    startTime: '开始时间',
+    status: '状态'
   },
   login: {
     title: 'JPY 云平台管理',
@@ -146,6 +150,18 @@ export default {
   },
   rpa: {
     allShortcuts: '所有捷径',
+    flows: '流程',
+    history: '执行历史',
+    executionHistory: '执行历史',
+    flowName: '流程名称',
+    progress: '进度',
+    result: '结果',
+    duration: '耗时',
+    noHistory: '暂无执行历史',
+    statusRunning: '运行中',
+    statusSuccess: '成功',
+    statusFailed: '失败',
+    statusCancelled: '已取消',
     shortcutName: '捷径名称',
     testDevice: '测试设备',
     edit: '编辑',

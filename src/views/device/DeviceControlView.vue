@@ -417,6 +417,7 @@ export default { name: 'DeviceControlView' }
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { backendApi } from '@/api/backendApi'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -1213,9 +1214,28 @@ watch(showScriptRepo, (val) => {
   if (val) loadScripts()
 })
 
-onMounted(() => {
-  fetchWsDevices()
+const route = useRoute()
+
+onMounted(async () => {
+  await fetchWsDevices()
   refreshTimer = window.setInterval(fetchWsDevices, 10000)
+
+  // 如果 URL 带有 deviceId 参数，自动选中对应设备
+  const deviceIdParam = route.query.deviceId
+  if (deviceIdParam) {
+    const targetId = parseInt(deviceIdParam as string)
+    if (!isNaN(targetId)) {
+      // 先尝试在已加载的设备列表中查找
+      const found = wsDeviceList.value.find(d => d.deviceId === targetId)
+      if (found) {
+        selectedDeviceId.value = targetId
+        handleDeviceChange()
+      } else {
+        // 设备可能还没连接 WS，保存 deviceId 等待后续匹配
+        selectedDeviceId.value = targetId
+      }
+    }
+  }
 })
 
 onUnmounted(() => {

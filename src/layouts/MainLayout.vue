@@ -100,22 +100,33 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSdkStore } from '@/stores/sdkStore'
 import { useI18n } from 'vue-i18n'
 import { Monitor, ArrowDown, Files, VideoPlay, Connection, Document, Pointer, Notebook } from '@element-plus/icons-vue'
 import ServiceStatus from '@/components/ServiceStatus.vue'
+import { useFrontendWS } from '@/composables/useFrontendWS'
 
 const route = useRoute()
 const router = useRouter()
 const sdkStore = useSdkStore()
 const { locale } = useI18n()
+const { serverStatus, subscribe, unsubscribe } = useFrontendWS()
 
-const currentHost = computed(() => localStorage.getItem('last_host') || '')
+// 从 WS 订阅获取服务器状态，回退到 localStorage
+const currentHost = computed(() => serverStatus.value.host || localStorage.getItem('last_host') || '')
 
 const activeMenu = computed(() => route.path)
 const currentLang = computed(() => locale.value)
+
+onMounted(() => {
+  subscribe('server_status')
+})
+
+onUnmounted(() => {
+  unsubscribe('server_status')
+})
 
 const handleCommand = (command: string) => {
   if (command === 'logout') {

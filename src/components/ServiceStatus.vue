@@ -4,23 +4,35 @@
     <div class="status-indicator" :class="{ connected: isConnected }"></div>
     <span class="status-text">
       {{ isConnected ? $t('common.serviceConnected') : $t('common.serviceDisconnected') }}
+      <span v-if="isConnected && version" class="version">| {{ version }}</span>
     </span>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { localService } from '@/api/localService';
 import { useUnifiedWebSocket } from '@/composables/useUnifiedWebSocket';
 
 const isConnected = ref(false);
+const version = ref('');
 let timer: any = null;
 const { connect: connectUnifiedWS } = useUnifiedWebSocket();
 
 const checkStatus = async () => {
-  isConnected.value = await localService.checkHealth();
-  if (isConnected.value) {
-    connectUnifiedWS();
+  try {
+    const res = await fetch('/health');
+    if (res.ok) {
+      const data = await res.json();
+      isConnected.value = true;
+      version.value = data.version ? `v${data.version}` : '';
+      connectUnifiedWS();
+    } else {
+      isConnected.value = false;
+      version.value = '';
+    }
+  } catch {
+    isConnected.value = false;
+    version.value = '';
   }
 };
 
@@ -57,5 +69,9 @@ onUnmounted(() => {
 
 .status-indicator.connected {
   background-color: #67c23a;
+}
+
+.version {
+  color: #909399;
 }
 </style>

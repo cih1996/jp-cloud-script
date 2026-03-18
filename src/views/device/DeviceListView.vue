@@ -89,10 +89,13 @@
             </div>
           </template>
         </el-table-column>
-        <!-- UUID 列 -->
-        <el-table-column prop="deviceInfo.uuid" label="UUID" min-width="120">
+        <!-- 设备信息列（合并型号+UUID） -->
+        <el-table-column label="设备信息" min-width="150">
           <template #default="scope">
-            <span class="mono-text text-xs">{{ scope.row.deviceInfo?.uuid || '-' }}</span>
+            <div class="device-info-cell">
+              <div class="device-brand">{{ scope.row.deviceInfo?.brand || '-' }}</div>
+              <div class="device-uuid">{{ scope.row.deviceInfo?.uuid || '-' }}</div>
+            </div>
           </template>
         </el-table-column>
         <!-- WebSocket 连接状态 -->
@@ -104,9 +107,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="deviceInfo.brand" :label="$t('device.brand')" min-width="100" />
-        <el-table-column prop="deviceInfo.version" :label="$t('device.version')" min-width="100" />
-        <el-table-column prop="deviceInfo.online" :label="$t('device.status')" min-width="100">
+        <el-table-column prop="deviceInfo.online" :label="$t('device.status')" width="90">
           <template #default="scope">
             <div class="status-indicator" :class="{ online: scope.row.deviceInfo?.online }">
               <span class="status-dot"></span>
@@ -114,16 +115,23 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="deviceInfo.ip" :label="$t('device.ip')" min-width="140">
+        <el-table-column prop="deviceInfo.ip" :label="$t('device.ip')" width="120">
            <template #default="scope">
              <span class="mono-text">{{ scope.row.deviceInfo?.ip }}</span>
            </template>
         </el-table-column>
-        <el-table-column prop="deviceInfo.s5info" :label="$t('device.s5Proxy')" min-width="160">
+        <el-table-column prop="deviceInfo.s5info" :label="$t('device.s5Proxy')" width="130">
            <template #default="scope">
-             <el-tag v-if="scope.row.deviceInfo?.s5info" size="small" type="success">
-                {{ scope.row.deviceInfo?.s5info }}
-             </el-tag>
+             <el-tooltip
+               v-if="scope.row.deviceInfo?.s5info"
+               :content="scope.row.deviceInfo?.s5info"
+               placement="top"
+               :show-after="300"
+             >
+               <el-tag size="small" type="success" class="s5-tag">
+                 {{ parseS5Display(scope.row.deviceInfo?.s5info) }}
+               </el-tag>
+             </el-tooltip>
              <span v-else class="text-secondary">-</span>
            </template>
         </el-table-column>
@@ -181,27 +189,18 @@
           </template>
         </el-table-column>
         
-        <el-table-column :label="$t('common.actions')" fixed="right" width="260">
+        <el-table-column :label="$t('common.actions')" fixed="right" width="240">
           <template #default="scope">
-            <el-button link type="primary" size="small" @click="openInspector(scope.row)">
-              {{ $t('device.inspect') }}
+            <el-button link type="primary" size="small" @click="openDeviceControl(scope.row)">
+              {{ $t('device.devMode') }}
             </el-button>
-            <el-button 
-                 link 
-                 size="small" 
-                 :type="hasPortMapping(scope.row.deviceId, 19011) ? 'success' : 'primary'"
-                 :loading="devModeLoading[scope.row.deviceId]"
-                 @click="toggleDevMode(scope.row)"
-             >
-               {{ $t('device.devMode') }}
-             </el-button>
             <el-button link type="primary" size="small" @click="openS5Config(scope.row)">
               S5
             </el-button>
-            <el-button 
-              link 
-              type="primary" 
-              size="small" 
+            <el-button
+              link
+              type="primary"
+              size="small"
               :loading="isTunnelLoading(scope.row)"
               @click="handleTunnelClick(scope.row)"
             >
@@ -213,7 +212,8 @@
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="screenshot">{{ $t('device.screenshot') }}</el-dropdown-item>
+                  <el-dropdown-item command="portMapping">端口映射</el-dropdown-item>
+                  <el-dropdown-item command="screenshot" divided>{{ $t('device.screenshot') }}</el-dropdown-item>
                   <el-dropdown-item command="shell">{{ $t('device.shell') }}</el-dropdown-item>
                   <el-dropdown-item command="appList">{{ $t('device.appList') }}</el-dropdown-item>
                   <el-dropdown-item command="startApp">{{ $t('device.startApp') }}</el-dropdown-item>
@@ -397,11 +397,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from 'vue'
+import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSdkStore } from '@/stores/sdkStore'
 import { useRpaStore, type DeviceRpaStatus } from '@/stores/rpaStore'
 import { useDeviceTunnel } from '@/composables/useDeviceTunnel'
+import { useFrontendWS } from '@/composables/useFrontendWS'
 import { localService } from '@/api/localService'
 import { backendApi } from '@/api/backendApi'
 import { ElMessage, ElTable, ElMessageBox, ElLoading } from 'element-plus'
@@ -411,21 +412,24 @@ import S5ConfigDialog from '@/components/S5ConfigDialog.vue'
 import { useI18n } from 'vue-i18n'
 import type { ListRes } from '@sdk/index'
 
-const { t } = useI18n()
+const { t: _t } = useI18n()
 const router = useRouter()
 const sdkStore = useSdkStore()
 const rpaStore = useRpaStore()
-const { 
-  isConnecting, 
-  activeDeviceId, 
-  connectionStatus, 
-  startTunnel, 
+const {
+  isConnecting,
+  activeDeviceId,
+  connectionStatus,
+  startTunnel,
   stopTunnel,
   startCustomTunnel,
   stopCustomTunnel,
   checkActiveTunnels,
   deviceMappings
 } = useDeviceTunnel()
+
+// 使用新的前端 WS 订阅（实时推送，替代 HTTP 轮询）
+const frontendWS = useFrontendWS()
 
 const loading = ref(false)
 
@@ -517,6 +521,9 @@ const toggleDevMode = async (device: any) => {
 const handleCommand = async (cmd: string, row: any) => {
     currentDevice.value = row;
     switch (cmd) {
+        case 'portMapping':
+            await toggleDevMode(row);
+            break;
         case 'screenshot':
             await handleScreenshot(row);
             break;
@@ -758,9 +765,9 @@ const isTunnelLoading = (row: any) => {
 const getTunnelButtonText = (row: any) => {
   if (activeDeviceId.value === row.deviceId) {
       if (isConnecting.value) return connectionStatus.value || 'Init...'
-      return t('device.stopTunnel')
+      return '关闭ADB'
   }
-  return t('device.tunnel')
+  return '开启ADB'
 }
 
 const handleTunnelClick = async (row: any) => {
@@ -820,8 +827,12 @@ const clearSelection = () => {
   deviceTable.value?.clearSelection()
 }
 
-const openInspector = (row: any) => {
-  router.push(`/device/${row.deviceId}/inspect`)
+// 跳转到设备操控页面并自动选中设备
+const openDeviceControl = (row: any) => {
+  router.push({
+    path: '/device/control',
+    query: { deviceId: row.deviceId }
+  })
 }
 
 const openS5Config = (row: any) => {
@@ -902,9 +913,32 @@ const getOtherMappings = (deviceId: number) => {
     return ports.filter(p => p !== 9009 && p !== 5555);
 }
 
-// ========== RPA 状态相关 ==========
+// ========== RPA 状态相关（优先使用 WS 推送的 _local 数据）==========
 const getRpaStatus = (deviceId: number): DeviceRpaStatus | undefined => {
-    return rpaStore.getDeviceStatus(deviceId);
+    // 优先从 WS 推送的设备数据中获取 _local
+    const wsStatus = frontendWS.getDeviceRpaStatus(deviceId)
+    if (wsStatus && wsStatus.rpaId) {
+        // 转换为 DeviceRpaStatus 格式
+        return {
+            deviceId,
+            rpaId: wsStatus.rpaId || 0,
+            rpaName: wsStatus.rpaName || '',
+            status: (wsStatus.rpaStatus as DeviceRpaStatus['status']) || 'idle',
+            currentStep: wsStatus.rpaStep || 0,
+            totalSteps: wsStatus.rpaTotalSteps || 0,
+            stepName: wsStatus.rpaStepName || '',
+            subStep: wsStatus.rpaSubStep || 0,
+            subStepName: wsStatus.rpaSubStepName || '',
+            loopCount: wsStatus.rpaLoopCount || 0,
+            totalTime: 0,
+            loopStartAt: null,
+            scriptStatus: '',
+            scriptProgress: 0,
+            lastError: wsStatus.rpaLastError || ''
+        }
+    }
+    // 回退到 rpaStore
+    return rpaStore.getDeviceStatus(deviceId)
 }
 
 const getRpaStatusType = (deviceId: number): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
@@ -992,6 +1026,30 @@ const cellStyle = ({ column }: { column: any }): any => {
     return { verticalAlign: 'top' }
 }
 
+// 解析 S5 代理信息，只显示 IP:端口
+const parseS5Display = (s5info: string): string => {
+    if (!s5info) return '-'
+    try {
+        // 尝试解析 JSON 格式
+        const parsed = JSON.parse(s5info)
+        if (parsed.s5Url) {
+            // 从 socks5://user:pass@ip:port 提取 ip:port
+            const match = parsed.s5Url.match(/@([^:]+):(\d+)/)
+            if (match) {
+                return `${match[1]}:${match[2]}`
+            }
+        }
+        return '✓ 已配置'
+    } catch {
+        // 非 JSON 格式，尝试直接提取 IP:端口
+        const match = s5info.match(/(\d+\.\d+\.\d+\.\d+):(\d+)/)
+        if (match) {
+            return `${match[1]}:${match[2]}`
+        }
+        return '✓ 已配置'
+    }
+}
+
 // 获取 WebSocket 连接的设备列表
 const fetchWsDevices = async () => {
   try {
@@ -1018,26 +1076,36 @@ const isDeviceWsConnected = (uuid: string | undefined): boolean => {
   return wsDevices.value.has(uuid)
 }
 
-// RPA 状态定时刷新
-let rpaRefreshTimer: ReturnType<typeof setInterval> | null = null;
+// 监听 WS 设备数据变化，同步到 rawTableData
+watch(() => frontendWS.devices.value, (newDevices) => {
+  if (newDevices && newDevices.length > 0) {
+    // 转换为原有格式
+    rawTableData.value = newDevices.map(d => ({
+      deviceId: d.deviceId,
+      deviceInfo: d.deviceInfo,
+      tbYunJiUserDeviceId: d.tbYunJiUserDeviceId,
+      _local: d._local // 保留本地状态
+    }))
+    total.value = newDevices.length
+    loading.value = false
+  }
+}, { immediate: true })
 
 onMounted(() => {
+  // 订阅设备列表（通过 WS 实时推送）
+  frontendWS.subscribe('devices')
+
+  // 首次加载时也通过 HTTP 获取一次（确保立即有数据）
   fetchDevices()
   fetchWsDevices()
-  // 加载 RPA 状态
-  rpaStore.loadDeviceStatuses()
-  // 每 3 秒刷新一次 RPA 状态和 WS 设备状态
-  rpaRefreshTimer = setInterval(() => {
-    rpaStore.loadDeviceStatuses()
-    fetchWsDevices()
-  }, 3000)
+
+  // 检查活跃隧道
+  checkActiveTunnels()
 })
 
 onUnmounted(() => {
-  if (rpaRefreshTimer) {
-    clearInterval(rpaRefreshTimer)
-    rpaRefreshTimer = null
-  }
+  // 取消订阅
+  frontendWS.unsubscribe('devices')
 })
 </script>
 
@@ -1253,6 +1321,28 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+// 设备信息单元格样式
+.device-info-cell {
+  .device-brand {
+    font-size: 13px;
+    font-weight: 500;
+    color: #111827;
+  }
+  .device-uuid {
+    font-size: 11px;
+    color: #6b7280;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+}
+
+// S5 代理标签样式
+.s5-tag {
+  cursor: pointer;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 // RPA 错误内联样式
