@@ -34,6 +34,7 @@ export default {
     dev: '脚本开发',
     cloudFile: '云文件管理',
     rpa: 'RPA',
+    rpaHistory: '执行记录',
     unifiedTest: '统一测试',
     logs: '系统日志'
   },

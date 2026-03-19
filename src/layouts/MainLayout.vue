@@ -35,6 +35,10 @@
           <el-icon><VideoPlay /></el-icon>
           <span>{{ $t('menu.rpa') }}</span>
         </el-menu-item>
+        <el-menu-item index="/rpa/history">
+          <el-icon><List /></el-icon>
+          <span>执行记录</span>
+        </el-menu-item>
         <el-menu-item index="/unified-test">
           <el-icon><Connection /></el-icon>
           <span>{{ $t('menu.unifiedTest') }}</span>
@@ -104,7 +108,7 @@ import { computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSdkStore } from '@/stores/sdkStore'
 import { useI18n } from 'vue-i18n'
-import { Monitor, ArrowDown, Files, VideoPlay, Connection, Document, Pointer, Notebook } from '@element-plus/icons-vue'
+import { Monitor, ArrowDown, Files, VideoPlay, Connection, Document, Pointer, Notebook, List } from '@element-plus/icons-vue'
 import ServiceStatus from '@/components/ServiceStatus.vue'
 import { useFrontendWS } from '@/composables/useFrontendWS'
 

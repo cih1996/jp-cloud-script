@@ -402,5 +402,33 @@ export const backendApi = {
         const res = await fetch(`${getBaseUrl()}/api/rpa/devices/${deviceId}/history?limit=${limit}`)
         const json = await res.json()
         return json.data
+    },
+
+    // ========== 执行历史 API ==========
+
+    // 获取执行历史列表（支持筛选）
+    async getRpaHistoryList(params?: { limit?: number; deviceId?: number; rpaId?: number; status?: string }) {
+        const query = new URLSearchParams()
+        if (params?.limit) query.set('limit', String(params.limit))
+        if (params?.deviceId) query.set('deviceId', String(params.deviceId))
+        if (params?.rpaId) query.set('rpaId', String(params.rpaId))
+        if (params?.status) query.set('status', params.status)
+        const res = await fetch(`${getBaseUrl()}/api/rpa/history?${query}`)
+        const json = await res.json()
+        return json.data
+    },
+
+    // 获取执行历史详情（含步骤明细）
+    async getRpaHistoryDetail(id: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/history/${id}`)
+        const json = await res.json()
+        return { history: json.data, steps: json.steps }
+    },
+
+    // 获取执行历史的步骤明细
+    async getRpaHistorySteps(id: number) {
+        const res = await fetch(`${getBaseUrl()}/api/rpa/history/${id}/steps`)
+        const json = await res.json()
+        return json.data
     }
 }

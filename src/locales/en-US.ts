@@ -34,6 +34,7 @@ export default {
     dev: 'Script Dev',
     cloudFile: 'Cloud Files',
     rpa: 'RPA',
+    rpaHistory: 'Execution History',
     unifiedTest: 'Unified Test',
     logs: 'System Logs'
   },

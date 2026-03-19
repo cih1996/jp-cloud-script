@@ -50,6 +50,11 @@ const router = createRouter({
           component: () => import('@/views/RpaView.vue')
         },
         {
+          path: 'rpa/history',
+          name: 'rpaHistory',
+          component: () => import('@/views/rpa/RpaHistoryView.vue')
+        },
+        {
           path: 'unified-test',
           name: 'unifiedTest',
           component: () => import('@/views/test/UnifiedTestView.vue')
