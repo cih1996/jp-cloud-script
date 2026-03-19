@@ -19,6 +19,8 @@ export interface LocalDeviceState {
   rpaLastError?: string
   rpaSubStep?: number
   rpaSubStepName?: string
+  rpaTotalTime?: number
+  rpaLoopStartAt?: string | null
 }
 
 // 带本地状态的设备

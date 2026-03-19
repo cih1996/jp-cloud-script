@@ -930,8 +930,8 @@ const getRpaStatus = (deviceId: number): DeviceRpaStatus | undefined => {
             subStep: wsStatus.rpaSubStep || 0,
             subStepName: wsStatus.rpaSubStepName || '',
             loopCount: wsStatus.rpaLoopCount || 0,
-            totalTime: 0,
-            loopStartAt: null,
+            totalTime: wsStatus.rpaTotalTime || 0,
+            loopStartAt: wsStatus.rpaLoopStartAt || null,
             scriptStatus: '',
             scriptProgress: 0,
             lastError: wsStatus.rpaLastError || ''
@@ -998,7 +998,11 @@ const getCurrentDuration = (deviceId: number): string => {
     const status = getRpaStatus(deviceId);
     if (!status) return '0s';
 
-    // 只有运行中才显示实时计时
+    // 触发响应式依赖，让模板每秒重新计算
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    timerTick.value;
+
+    // 运行中：显示实时计时
     if (status.status === 'running' && status.loopStartAt) {
         const startTime = new Date(status.loopStartAt).getTime();
         if (!isNaN(startTime)) {
@@ -1010,9 +1014,14 @@ const getCurrentDuration = (deviceId: number): string => {
         }
     }
 
-    // 其他状态显示总耗时
+    // 完成/失败/暂停：显示总耗时（保留显示）
     if (status.totalTime > 0) {
         return formatDuration(status.totalTime);
+    }
+
+    // 运行中但没有 loopStartAt（刚启动）
+    if (status.status === 'running') {
+        return '0s';
     }
 
     return '0s';
@@ -1076,20 +1085,59 @@ const isDeviceWsConnected = (uuid: string | undefined): boolean => {
   return wsDevices.value.has(uuid)
 }
 
-// 监听 WS 设备数据变化，同步到 rawTableData
+// 监听 WS 设备数据变化，就地更新（保留 el-table 选中状态）
 watch(() => frontendWS.devices.value, (newDevices) => {
-  if (newDevices && newDevices.length > 0) {
-    // 转换为原有格式
-    rawTableData.value = newDevices.map(d => ({
-      deviceId: d.deviceId,
-      deviceInfo: d.deviceInfo,
-      tbYunJiUserDeviceId: d.tbYunJiUserDeviceId,
-      _local: d._local // 保留本地状态
-    }))
-    total.value = newDevices.length
-    loading.value = false
+  if (!newDevices || newDevices.length === 0) return
+
+  const existing = rawTableData.value
+  const existingMap = new Map(existing.map(d => [d.deviceId, d]))
+
+  // 就地更新已有行的属性，不替换对象引用
+  let changed = false
+  for (const nd of newDevices) {
+    const old = existingMap.get(nd.deviceId)
+    if (old) {
+      // 更新字段但保留对象引用
+      old.deviceInfo = nd.deviceInfo
+      old.tbYunJiUserDeviceId = nd.tbYunJiUserDeviceId
+      old._local = nd._local
+    } else {
+      changed = true
+    }
   }
+
+  // 只有设备数量变化时才替换数组（新增/删除设备）
+  if (changed || newDevices.length !== existing.length) {
+    // 保留已有对象引用，只添加新设备
+    const newMap = new Map(newDevices.map(d => [d.deviceId, d]))
+    const result: any[] = []
+    // 保留已有的（维持引用）
+    for (const old of existing) {
+      if (newMap.has(old.deviceId)) {
+        result.push(old)
+      }
+    }
+    // 添加新增的
+    for (const nd of newDevices) {
+      if (!existingMap.has(nd.deviceId)) {
+        result.push({
+          deviceId: nd.deviceId,
+          deviceInfo: nd.deviceInfo,
+          tbYunJiUserDeviceId: nd.tbYunJiUserDeviceId,
+          _local: nd._local
+        })
+      }
+    }
+    rawTableData.value = result
+  }
+
+  total.value = newDevices.length
+  loading.value = false
 }, { immediate: true })
+
+// 本地计时器：驱动运行中设备的实时耗时刷新（WS 按需推送不会每秒触发）
+const timerTick = ref(0)
+let durationTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   // 订阅设备列表（通过 WS 实时推送）
@@ -1101,11 +1149,21 @@ onMounted(() => {
 
   // 检查活跃隧道
   checkActiveTunnels()
+
+  // 启动本地计时器（每秒刷新一次耗时显示）
+  durationTimer = setInterval(() => {
+    timerTick.value++
+  }, 1000)
 })
 
 onUnmounted(() => {
   // 取消订阅
   frontendWS.unsubscribe('devices')
+  // 清理计时器
+  if (durationTimer) {
+    clearInterval(durationTimer)
+    durationTimer = null
+  }
 })
 </script>
 

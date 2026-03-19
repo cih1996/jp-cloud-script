@@ -953,9 +953,31 @@ const runQuickTest = async () => {
         ElMessage.warning(t('rpa.messages.testDeviceNotFound'));
         return;
     }
-    
-    // Use editing form for quick test
-    await executeTask(editingForm.value, [device]);
+
+    // 先自动保存当前编辑的流程
+    if (!editingForm.value.name) {
+        ElMessage.warning(t('rpa.messages.taskNameRequired'));
+        return;
+    }
+    rpaStore.updateTask(editingForm.value);
+
+    const rpaId = task.value?.id;
+    if (!rpaId) {
+        ElMessage.error('流程未保存，无法测试');
+        return;
+    }
+
+    // 通过后端引擎执行（和设备列表启动任务走同一套）
+    try {
+        running.value = true;
+        await backendApi.bindDeviceRpa(device.deviceId, rpaId, 'single');
+        await backendApi.startDeviceRpa(device.deviceId);
+        ElMessage.success(`已在设备 ${device.deviceId} 上启动测试`);
+    } catch (e: any) {
+        ElMessage.error('启动测试失败: ' + e.message);
+    } finally {
+        running.value = false;
+    }
 };
 
 // Watch for task change to reset editing mode
