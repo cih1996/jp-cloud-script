@@ -748,8 +748,13 @@ const runOcr = async () => {
   selectedOcrIndex.value = null
 
   try {
-    const script = `let results = await android.ocr.ocr(${ocrQuality.value});
-return JSON.stringify(results, null, 2);`
+    const script = `let results = "";
+try {
+  results = JSON.stringify(await android.ocr.ocr(${ocrQuality.value}));
+} catch(e) {
+  results = JSON.stringify(e);
+}
+return results;`
 
     const debugId = `ocr_${Date.now()}`
     await backendApi.sendWsDebug(selectedDeviceId.value, debugId, script, 30000)
@@ -763,12 +768,17 @@ return JSON.stringify(results, null, 2);`
           // 有结果返回
           if (result.success && result.result) {
             const parsed = JSON.parse(result.result)
-            ocrResults.value = Array.isArray(parsed) ? parsed : []
-            // 按置信度排序
-            ocrResults.value.sort((a, b) => b.qua - a.qua)
-            ElMessage.success(`识别到 ${ocrResults.value.length} 个文本`)
+            if (Array.isArray(parsed)) {
+              ocrResults.value = parsed
+              ocrResults.value.sort((a, b) => b.qua - a.qua)
+              ElMessage.success(`识别到 ${ocrResults.value.length} 个文本`)
+            } else {
+              // catch 到的错误对象
+              ElMessage.error('OCR 识别失败: ' + JSON.stringify(parsed))
+            }
           } else if (result.error) {
-            ElMessage.error('OCR 识别失败: ' + result.error)
+            const errStr = typeof result.error === 'object' ? JSON.stringify(result.error) : String(result.error)
+            ElMessage.error('OCR 识别失败: ' + errStr)
           }
           break
         }
@@ -780,7 +790,8 @@ return JSON.stringify(results, null, 2);`
       ElMessage.warning('OCR 识别超时，请重试')
     }
   } catch (e: any) {
-    ElMessage.error('OCR 识别失败: ' + e.message)
+    const errMsg = e instanceof Error ? e.message : (typeof e === 'object' ? JSON.stringify(e) : String(e))
+    ElMessage.error('OCR 识别失败: ' + errMsg)
   } finally {
     ocrLoading.value = false
   }
@@ -992,7 +1003,8 @@ const runScript = async () => {
       execResult.value = { success: false, error: '执行超时', duration: timeout.value }
     }
   } catch (e: any) {
-    execResult.value = { success: false, error: e.message, duration: 0 }
+    const errMsg = e instanceof Error ? e.message : (typeof e === 'object' ? JSON.stringify(e) : String(e))
+    execResult.value = { success: false, error: errMsg, duration: 0 }
   } finally {
     running.value = false
   }
@@ -1068,7 +1080,11 @@ return "已发送回车键";`
 
 // 格式化结果
 const formatResult = (result: any) => {
-  if (result.error) return result.error
+  if (result.error) {
+    return typeof result.error === 'object'
+      ? JSON.stringify(result.error, null, 2)
+      : String(result.error)
+  }
   if (result.result !== undefined) {
     return typeof result.result === 'object'
       ? JSON.stringify(result.result, null, 2)

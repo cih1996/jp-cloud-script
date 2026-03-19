@@ -75,16 +75,19 @@ router.beforeEach(async (to, _from, next) => {
   // If requires auth and not logged in (and no API key in storage/state)
   if (to.meta.requiresAuth && !sdkStore.isLoggedIn && !sdkStore.apiKey) {
     next('/login')
-  } else if (to.path === '/login' && (sdkStore.isLoggedIn || sdkStore.apiKey)) {
-      // If going to login but already has key, try to redirect home
-      // But we need to make sure login is actually valid.
-      // For now let's just allow them to go to login if they really want (e.g. to switch accounts)
-      // or redirect if they are fully logged in.
-      if (sdkStore.isLoggedIn) {
-          next('/')
-      } else {
-          next()
-      }
+  } else if (to.meta.requiresAuth && !sdkStore.isLoggedIn && sdkStore.apiKey) {
+    // 有 apiKey 但未登录（页面刷新场景），自动登录后再放行
+    try {
+      await sdkStore.login(sdkStore.apiKey, sdkStore.serverHost)
+      next()
+    } catch {
+      // 自动登录失败，清除无效 key，跳转登录页
+      sdkStore.apiKey = ''
+      localStorage.removeItem('jpy_api_key')
+      next('/login')
+    }
+  } else if (to.path === '/login' && sdkStore.isLoggedIn) {
+    next('/')
   } else {
     next()
   }
