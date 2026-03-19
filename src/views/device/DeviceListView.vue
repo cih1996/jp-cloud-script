@@ -101,9 +101,9 @@
         <!-- WebSocket 连接状态 -->
         <el-table-column label="WS状态" width="90">
           <template #default="scope">
-            <div class="ws-status" :class="{ connected: isDeviceWsConnected(scope.row.deviceInfo?.uuid) }">
+            <div class="ws-status" :class="{ connected: scope.row.wsConnected }">
               <span class="ws-dot"></span>
-              {{ isDeviceWsConnected(scope.row.deviceInfo?.uuid) ? '已连接' : '未连接' }}
+              {{ scope.row.wsConnected ? '已连接' : '未连接' }}
             </div>
           </template>
         </el-table-column>
@@ -432,9 +432,6 @@ const {
 const frontendWS = useFrontendWS()
 
 const loading = ref(false)
-
-// WebSocket 设备连接状态
-const wsDevices = ref<Map<string, any>>(new Map()) // serialno -> device info
 
 const changeOsVisible = ref(false)
 const changeOsDeviceIds = ref<number[]>([])
@@ -1059,32 +1056,6 @@ const parseS5Display = (s5info: string): string => {
     }
 }
 
-// 获取 WebSocket 连接的设备列表
-const fetchWsDevices = async () => {
-  try {
-    const res = await fetch('/api/devicews/devices')
-    const json = await res.json()
-    if (json.code === 200 && Array.isArray(json.data)) {
-      const map = new Map<string, any>()
-      for (const d of json.data) {
-        if (d.serialno) {
-          map.set(d.serialno, d)
-        }
-      }
-      wsDevices.value = map
-    }
-  } catch (e) {
-    console.error('Failed to fetch WS devices:', e)
-  }
-}
-
-// 判断设备是否通过 WebSocket 连接
-// UUID 格式通常是 serialno，需要做 CRC32 hash 匹配或直接用 serialno
-const isDeviceWsConnected = (uuid: string | undefined): boolean => {
-  if (!uuid) return false
-  return wsDevices.value.has(uuid)
-}
-
 // 监听 WS 设备数据变化，就地更新（保留 el-table 选中状态）
 watch(() => frontendWS.devices.value, (newDevices) => {
   if (!newDevices || newDevices.length === 0) return
@@ -1145,7 +1116,6 @@ onMounted(() => {
 
   // 首次加载时也通过 HTTP 获取一次（确保立即有数据）
   fetchDevices()
-  fetchWsDevices()
 
   // 检查活跃隧道
   checkActiveTunnels()
