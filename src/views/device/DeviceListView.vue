@@ -808,6 +808,19 @@ const fetchDevices = async () => {
       rawTableData.value = []
       total.value = 0
     }
+    // HTTP 数据不含 wsConnected，从 WS 推送数据合并
+    const wsDevices = frontendWS.devices.value
+    if (wsDevices && wsDevices.length > 0) {
+      const wsMap = new Map(wsDevices.map(d => [d.deviceId, d]))
+      for (const row of rawTableData.value) {
+        const wd = wsMap.get(row.deviceId)
+        if (wd) {
+          row.wsConnected = (wd as any).wsConnected
+          row.middleAgentDevice = wd.middleAgentDevice
+          if (wd._local) row._local = wd._local
+        }
+      }
+    }
   } catch (error) {
     console.error("Fetch devices error", error)
     ElMessage.error("Failed to fetch devices")
@@ -1097,6 +1110,8 @@ watch(() => frontendWS.devices.value, (newDevices) => {
           deviceId: nd.deviceId,
           deviceInfo: nd.deviceInfo,
           tbYunJiUserDeviceId: nd.tbYunJiUserDeviceId,
+          wsConnected: (nd as any).wsConnected,
+          middleAgentDevice: nd.middleAgentDevice,
           _local: nd._local
         })
       }
