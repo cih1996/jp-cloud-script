@@ -67,7 +67,8 @@ const actionCategories = computed(() => ({
     'network': [
         { type: 'download_url', label: 'URL下载' },
         { type: 'download_cloud', label: '云端下载' },
-        { type: 'http_request', label: 'HTTP请求' }
+        { type: 'http_request', label: 'HTTP请求' },
+        { type: 'network_check', label: '网络检测' }
     ],
     'scripting': [
         { type: 'shell', label: 'Shell命令' },

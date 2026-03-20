@@ -19,6 +19,7 @@ export const getStepStyle = (type: string) => {
         // 新增步骤类型
         case 'execute_repo_script': return { icon: Document, color: '#0284c7', bg: '#e0f2fe' };
         case 'set_variables': return { icon: SetUp, color: '#ca8a04', bg: '#fef9c3' };
+        case 'network_check': return { icon: Connection, color: '#0891b2', bg: '#ecfeff' };
         case 'condition_check': return { icon: Switch, color: '#7c3aed', bg: '#ede9fe' };
         default: return { icon: Connection, color: '#6b7280', bg: '#f9fafb' };
     }
@@ -51,6 +52,7 @@ export const formatStepType = (type: string, _t?: (key: string) => string) => {
         // 新增步骤类型
         execute_repo_script: '仓库脚本',
         set_variables: '设置变量',
+        network_check: '网络检测',
         condition_check: '条件判断'
     };
     return map[type] || type;

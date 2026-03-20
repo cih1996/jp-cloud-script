@@ -512,6 +512,28 @@
                </div>
              </template>
 
+             <!-- Network Check -->
+             <template v-if="step.type === 'network_check'">
+               <div class="ios-field">
+                 <label>目标地址</label>
+                 <el-input v-model="step.params.targetUrl" placeholder="ws://192.168.1.100:1003/ws/device" :readonly="!isEditing" />
+               </div>
+               <div class="field-row">
+                 <div class="ios-field half">
+                   <label>最大重试次数</label>
+                   <el-input-number v-model="step.params.maxRetries" :min="1" :max="100" :disabled="!isEditing" style="width: 100%" />
+                 </div>
+                 <div class="ios-field half">
+                   <label>重试间隔（秒）</label>
+                   <el-input-number v-model="step.params.retryInterval" :min="1" :max="30" :disabled="!isEditing" style="width: 100%" />
+                 </div>
+               </div>
+               <div class="ios-hint">
+                 <p>改机重启后检测设备网络是否可达目标地址</p>
+                 <p>通过 nc 命令检测端口连通性，支持 ws:// http:// 等格式</p>
+               </div>
+             </template>
+
              <!-- Set Variables -->
              <template v-if="step.type === 'set_variables'">
                <div class="ios-field">
@@ -793,6 +815,7 @@ const addStep = (type: string) => {
     // 新增步骤类型
     if (type === 'execute_repo_script') newStep.params = { scriptId: null, timeout: null };
     if (type === 'set_variables') newStep.params = { variablesJson: '{\n  "key": "value"\n}' };
+    if (type === 'network_check') newStep.params = { targetUrl: '', maxRetries: 20, retryInterval: 3 };
     if (type === 'condition_check') newStep.params = { variable: '', operator: 'eq', value: '', onTrue: 'continue', onFalse: 'stop_error', jumpStepTrue: 0, jumpStepFalse: 0 };
 
     editingForm.value.steps.push(newStep);

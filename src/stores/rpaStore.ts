@@ -23,6 +23,7 @@ export type StepType =
   // 流程控制
   | 'execute_repo_script'
   | 'set_variables'
+  | 'network_check'
   | 'condition_check';
 
 export interface RpaStep {
