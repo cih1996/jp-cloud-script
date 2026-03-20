@@ -515,8 +515,8 @@
              <!-- Network Check -->
              <template v-if="step.type === 'network_check'">
                <div class="ios-field">
-                 <label>目标地址</label>
-                 <el-input v-model="step.params.targetUrl" placeholder="ws://192.168.1.100:1003/ws/device" :readonly="!isEditing" />
+                 <label>目标网址</label>
+                 <el-input v-model="step.params.targetUrl" placeholder="https://www.baidu.com（留空默认百度）" :readonly="!isEditing" />
                </div>
                <div class="field-row">
                  <div class="ios-field half">
@@ -529,8 +529,8 @@
                  </div>
                </div>
                <div class="ios-hint">
-                 <p>改机重启后检测设备网络是否可达目标地址</p>
-                 <p>通过 nc 命令检测端口连通性，支持 ws:// http:// 等格式</p>
+                 <p>改机重启后检测设备是否能正常上网</p>
+                 <p>通过 curl 访问目标网址，返回 HTTP 2xx/3xx 即为成功</p>
                </div>
              </template>
 
