@@ -88,6 +88,19 @@ export const backendApi = {
         })
     },
 
+    // 删除云文件
+    async deleteFiles(fileIds: number[]) {
+        const res = await fetch(`${getBaseUrl()}/api/file/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileIds })
+        })
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`)
+        const json = await res.json()
+        if (json.code !== 200) throw new Error(json.msg || '删除失败')
+        return json
+    },
+
     // 改机
     async changePhones(data: any[]) {
         return await callUnified('Changephones', data, { req: true })

@@ -30,6 +30,11 @@
         <el-table-column label="Actions" width="200" fixed="right">
           <template #default="scope">
             <el-button link type="primary" @click="handleCopyLink(scope.row)">Copy Link</el-button>
+            <el-popconfirm title="确认删除该文件？" @confirm="handleDelete(scope.row)">
+              <template #reference>
+                <el-button link type="danger">Delete</el-button>
+              </template>
+            </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
@@ -186,6 +191,16 @@ const handleCopyLink = async (row: FileItem) => {
     }
   } catch (error: any) {
     ElMessage.error('Failed to copy link: ' + error.message);
+  }
+};
+
+const handleDelete = async (row: FileItem) => {
+  try {
+    await backendApi.deleteFiles([row.fileId]);
+    ElMessage.success('删除成功');
+    await fetchFileList();
+  } catch (error: any) {
+    ElMessage.error('删除失败: ' + error.message);
   }
 };
 
