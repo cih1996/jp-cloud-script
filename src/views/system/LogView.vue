@@ -5,7 +5,8 @@
         <div class="card-header">
           <el-tabs v-model="activeTab" @tab-change="onTabChange">
             <el-tab-pane label="系统日志" name="system" />
-            <el-tab-pane label="设备日志" name="devicews" />
+            <el-tab-pane label="设备通信(1003)" name="devicews" />
+            <el-tab-pane label="API调用(1002)" name="api" />
           </el-tabs>
           <div class="header-actions">
             <!-- 系统日志 tab 操作 -->
@@ -23,7 +24,7 @@
                 <el-icon class="mr-1"><Download /></el-icon> 下载
               </el-button>
             </template>
-            <!-- 设备日志 tab 操作 -->
+            <!-- 设备通信 tab 操作 -->
             <template v-if="activeTab === 'devicews'">
               <el-input
                 v-model="dwsKeyword"
@@ -49,6 +50,32 @@
                 style="margin-left: 8px"
               />
             </template>
+            <!-- API调用 tab 操作 -->
+            <template v-if="activeTab === 'api'">
+              <el-input
+                v-model="apiKeyword"
+                placeholder="关键词过滤"
+                size="small"
+                style="width: 160px"
+                clearable
+                @keyup.enter="fetchAPILogs"
+              />
+              <el-select v-model="apiLines" size="small" style="width: 100px">
+                <el-option :value="100" label="100行" />
+                <el-option :value="200" label="200行" />
+                <el-option :value="500" label="500行" />
+                <el-option :value="1000" label="1000行" />
+              </el-select>
+              <el-button type="primary" size="small" @click="fetchAPILogs" :loading="apiLoading">
+                <el-icon class="mr-1"><Refresh /></el-icon> 刷新
+              </el-button>
+              <el-switch
+                v-model="apiAutoRefresh"
+                active-text="自动"
+                size="small"
+                style="margin-left: 8px"
+              />
+            </template>
             <el-button size="small" @click="clearCurrentLogs">
               <el-icon class="mr-1"><Delete /></el-icon> 清空
             </el-button>
@@ -68,6 +95,16 @@
             {{ dwsLoading ? '加载中...' : '暂无设备日志，点击刷新获取' }}
           </div>
           <div v-else v-for="(log, index) in dwsLogs" :key="index"
+               class="log-item" :class="getLogLevel(log)">
+            {{ log }}
+          </div>
+        </template>
+        <!-- API 日志 -->
+        <template v-if="activeTab === 'api'">
+          <div v-if="apiLogs.length === 0" class="empty-logs">
+            {{ apiLoading ? '加载中...' : '暂无API日志，点击刷新获取' }}
+          </div>
+          <div v-else v-for="(log, index) in apiLogs" :key="index"
                class="log-item" :class="getLogLevel(log)">
             {{ log }}
           </div>
@@ -118,6 +155,14 @@ const dwsLoading = ref(false)
 const dwsAutoRefresh = ref(false)
 let dwsTimer: ReturnType<typeof setInterval> | null = null
 
+// ===== API 日志 =====
+const apiLogs = ref<string[]>([])
+const apiKeyword = ref('')
+const apiLines = ref(200)
+const apiLoading = ref(false)
+const apiAutoRefresh = ref(false)
+let apiTimer: ReturnType<typeof setInterval> | null = null
+
 const fetchDeviceWSLogs = async () => {
   dwsLoading.value = true
   try {
@@ -132,6 +177,23 @@ const fetchDeviceWSLogs = async () => {
     console.error('查询设备日志失败:', e)
   } finally {
     dwsLoading.value = false
+  }
+}
+
+const fetchAPILogs = async () => {
+  apiLoading.value = true
+  try {
+    const result = await backendApi.queryLogs({
+      type: 'api',
+      lines: apiLines.value,
+      keyword: apiKeyword.value || undefined
+    })
+    apiLogs.value = result?.logs || []
+    scrollToBottom()
+  } catch (e: any) {
+    console.error('查询API日志失败:', e)
+  } finally {
+    apiLoading.value = false
   }
 }
 
@@ -152,18 +214,32 @@ watch(dwsAutoRefresh, (val) => {
   }
 })
 
+watch(apiAutoRefresh, (val) => {
+  if (val) {
+    apiTimer = setInterval(fetchAPILogs, 3000)
+  } else if (apiTimer) {
+    clearInterval(apiTimer)
+    apiTimer = null
+  }
+})
+
 // ===== 通用 =====
 const onTabChange = (tab: string) => {
   if (tab === 'devicews' && dwsLogs.value.length === 0) {
     fetchDeviceWSLogs()
+  }
+  if (tab === 'api' && apiLogs.value.length === 0) {
+    fetchAPILogs()
   }
 }
 
 const clearCurrentLogs = () => {
   if (activeTab.value === 'system') {
     debugStore.clearLogs()
-  } else {
+  } else if (activeTab.value === 'devicews') {
     dwsLogs.value = []
+  } else if (activeTab.value === 'api') {
+    apiLogs.value = []
   }
 }
 
@@ -211,6 +287,7 @@ onMessage((res) => {
 onUnmounted(() => {
   if (isStreaming.value && isConnected.value) send('stopLogStream')
   if (dwsTimer) { clearInterval(dwsTimer); dwsTimer = null }
+  if (apiTimer) { clearInterval(apiTimer); apiTimer = null }
 })
 </script>
 
