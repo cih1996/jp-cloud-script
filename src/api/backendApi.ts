@@ -491,5 +491,17 @@ export const backendApi = {
         const res = await fetch(`${getBaseUrl()}/api/rpa/history/${id}/steps`)
         const json = await res.json()
         return json.data
+    },
+
+    // 查询 DeviceWS 日志
+    async queryLogs(params: { type?: string; lines?: number; keyword?: string }) {
+        const query = new URLSearchParams()
+        query.set('type', params.type || 'devicews')
+        query.set('lines', String(params.lines || 200))
+        if (params.keyword) query.set('keyword', params.keyword)
+        const res = await fetch(`${getBaseUrl()}/api/logs/query?${query}`)
+        const json = await res.json()
+        if (json.code !== 200) throw new Error(json.msg || '查询失败')
+        return json.data
     }
 }

@@ -3,32 +3,75 @@
     <el-card class="box-card" shadow="never">
       <template #header>
         <div class="card-header">
-          <span>{{ $t('logs.title') }}</span>
+          <el-tabs v-model="activeTab" @tab-change="onTabChange">
+            <el-tab-pane label="系统日志" name="system" />
+            <el-tab-pane label="设备日志" name="devicews" />
+          </el-tabs>
           <div class="header-actions">
-            <el-button 
-              :type="isStreaming ? 'warning' : 'success'" 
-              @click="toggleStreaming"
-              :disabled="!isConnected"
-            >
-              <el-icon class="mr-1"><component :is="isStreaming ? VideoPause : VideoPlay" /></el-icon>
-              {{ isStreaming ? $t('logs.stop') : $t('logs.start') }}
-            </el-button>
-            <el-button type="primary" @click="downloadLogs">
-              <el-icon class="mr-1"><Download /></el-icon> {{ $t('logs.download') }}
-            </el-button>
-            <el-button @click="clearLogs">
-              <el-icon class="mr-1"><Delete /></el-icon> {{ $t('logs.clear') }}
+            <!-- 系统日志 tab 操作 -->
+            <template v-if="activeTab === 'system'">
+              <el-button
+                :type="isStreaming ? 'warning' : 'success'"
+                @click="toggleStreaming"
+                :disabled="!isConnected"
+                size="small"
+              >
+                <el-icon class="mr-1"><component :is="isStreaming ? VideoPause : VideoPlay" /></el-icon>
+                {{ isStreaming ? '停止' : '开始' }}
+              </el-button>
+              <el-button type="primary" size="small" @click="downloadLogs">
+                <el-icon class="mr-1"><Download /></el-icon> 下载
+              </el-button>
+            </template>
+            <!-- 设备日志 tab 操作 -->
+            <template v-if="activeTab === 'devicews'">
+              <el-input
+                v-model="dwsKeyword"
+                placeholder="关键词过滤"
+                size="small"
+                style="width: 160px"
+                clearable
+                @keyup.enter="fetchDeviceWSLogs"
+              />
+              <el-select v-model="dwsLines" size="small" style="width: 100px">
+                <el-option :value="100" label="100行" />
+                <el-option :value="200" label="200行" />
+                <el-option :value="500" label="500行" />
+                <el-option :value="1000" label="1000行" />
+              </el-select>
+              <el-button type="primary" size="small" @click="fetchDeviceWSLogs" :loading="dwsLoading">
+                <el-icon class="mr-1"><Refresh /></el-icon> 刷新
+              </el-button>
+              <el-switch
+                v-model="dwsAutoRefresh"
+                active-text="自动"
+                size="small"
+                style="margin-left: 8px"
+              />
+            </template>
+            <el-button size="small" @click="clearCurrentLogs">
+              <el-icon class="mr-1"><Delete /></el-icon> 清空
             </el-button>
           </div>
         </div>
       </template>
+
       <div class="log-container" ref="logContainer">
-        <div v-if="logs.length === 0" class="empty-logs">
-          {{ $t('logs.empty') }}
-        </div>
-        <div v-else v-for="(log, index) in logs" :key="index" class="log-item">
-          {{ log }}
-        </div>
+        <!-- 系统日志 -->
+        <template v-if="activeTab === 'system'">
+          <div v-if="systemLogs.length === 0" class="empty-logs">暂无系统日志</div>
+          <div v-else v-for="(log, index) in systemLogs" :key="index" class="log-item">{{ log }}</div>
+        </template>
+        <!-- 设备日志 -->
+        <template v-if="activeTab === 'devicews'">
+          <div v-if="dwsLogs.length === 0" class="empty-logs">
+            {{ dwsLoading ? '加载中...' : '暂无设备日志，点击刷新获取' }}
+          </div>
+          <div v-else v-for="(log, index) in dwsLogs" :key="index"
+               class="log-item" :class="getLogLevel(log)">
+            {{ log }}
+          </div>
+        </template>
       </div>
     </el-card>
   </div>
@@ -36,109 +79,93 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick, onUnmounted, computed, watch } from 'vue'
-import { Download, Delete, VideoPlay, VideoPause } from '@element-plus/icons-vue'
+import { Download, Delete, VideoPlay, VideoPause, Refresh } from '@element-plus/icons-vue'
 import { useUnifiedWebSocket } from '@/composables/useUnifiedWebSocket'
 import { useDebugStore } from '@/stores/debugStore'
-
+import { backendApi } from '@/api/backendApi'
 
 const debugStore = useDebugStore()
-const logs = computed(() => debugStore.logs
-  .filter(log => {
-      // User requirement: Only show Unified WS traffic (send/return)
-      // And LogStream (system logs) if enabled
-      // Filter out 'api-req', 'api-res', and other WS traffic if distinguishable
-      // We tagged UnifiedWS traffic with method='UnifiedWS' in useUnifiedWebSocket.ts
-      // LogStream traffic is tagged with method='LogStream' in onMessage below
-      return log.method === 'UnifiedWS' || log.method === 'LogStream'
-  })
-  .map(log => {
-  // If it's a string, return it directly (legacy format or simple message)
-  // If it's a structured LogEntry, format it nicely
-  if (typeof log === 'string') return log
-  
-  let content = ''
-  // For UnifiedWS, show full data
-  if (log.method === 'UnifiedWS') {
-      try {
-          content = JSON.stringify(log.data)
-      } catch (e) {
-          content = String(log.data)
-      }
-  } else if (log.method === 'LogStream') {
-      // LogStream data is usually a string line
-      content = String(log.data)
-  } else {
-      // Fallback for others
-      try {
-          content = JSON.stringify(log.data)
-      } catch (e) {
-          content = String(log.data)
-      }
-  }
-  
-  return `[${log.timestamp}] [${log.type}] ${content}`
-}))
 const logContainer = ref<HTMLElement | null>(null)
+const activeTab = ref('devicews')
+
+// ===== 系统日志 =====
+const systemLogs = computed(() => debugStore.logs
+  .filter(log => log.method === 'UnifiedWS' || log.method === 'LogStream')
+  .map(log => {
+    if (typeof log === 'string') return log
+    let content = ''
+    if (log.method === 'UnifiedWS') {
+      try { content = JSON.stringify(log.data) } catch { content = String(log.data) }
+    } else if (log.method === 'LogStream') {
+      content = String(log.data)
+    } else {
+      try { content = JSON.stringify(log.data) } catch { content = String(log.data) }
+    }
+    return `[${log.timestamp}] [${log.type}] ${content}`
+  }))
+
 const { isConnected, connect, send, onMessage } = useUnifiedWebSocket()
-// Use computed for isStreaming to sync with store, but we need a setter to update store
 const isStreaming = computed({
-    get: () => debugStore.isUnifiedLogStreaming,
-    set: (val) => debugStore.setUnifiedLogStreaming(val)
+  get: () => debugStore.isUnifiedLogStreaming,
+  set: (val) => debugStore.setUnifiedLogStreaming(val)
 })
 
-onMounted(() => {
-  if (!isConnected.value) {
-    connect()
-  }
-  // If store says streaming is ON, we should ensure backend knows it (in case of reconnect)
-  if (isStreaming.value) {
-      // Send start command again just in case
-      // But wait for connection? 
-      // If connected, send immediately.
-      if (isConnected.value) {
-          send('startLogStream')
-      } else {
-          // If not connected, it will be handled by auto-reconnect or user manual toggle
-          // But ideally we should watch isConnected
-      }
-  }
-})
+// ===== 设备日志 =====
+const dwsLogs = ref<string[]>([])
+const dwsKeyword = ref('')
+const dwsLines = ref(200)
+const dwsLoading = ref(false)
+const dwsAutoRefresh = ref(false)
+let dwsTimer: ReturnType<typeof setInterval> | null = null
 
-// Watch for connection changes to auto-start streaming if enabled
-watch(isConnected, (val) => {
-  if (val && isStreaming.value) {
-    send('startLogStream')
-  }
-})
-
-onUnmounted(() => {
-  // Stop backend streaming to save bandwidth when leaving this view
-  // But keep store state "ON" so it resumes when we return
-  if (isStreaming.value && isConnected.value) {
-      send('stopLogStream')
-  }
-})
-
-const toggleStreaming = () => {
-  if (isStreaming.value) {
-    // User wants to turn it OFF permanently
-    isStreaming.value = false // Updates store
-    send('stopLogStream')
-  } else {
-    // User wants to turn it ON
-    isStreaming.value = true // Updates store
-    send('startLogStream')
+const fetchDeviceWSLogs = async () => {
+  dwsLoading.value = true
+  try {
+    const result = await backendApi.queryLogs({
+      type: 'devicews',
+      lines: dwsLines.value,
+      keyword: dwsKeyword.value || undefined
+    })
+    dwsLogs.value = result?.logs || []
+    scrollToBottom()
+  } catch (e: any) {
+    console.error('查询设备日志失败:', e)
+  } finally {
+    dwsLoading.value = false
   }
 }
 
-// Listen for log stream
-onMessage((res) => {
-  if (res.type === 'LogStream') {
+const getLogLevel = (line: string): string => {
+  if (line.includes('[ERROR]')) return 'log-error'
+  if (line.includes('[WARN]')) return 'log-warn'
+  if (line.includes('[DEBUG]')) return 'log-debug'
+  return ''
+}
 
-    debugStore.addLog('ws-push', res.data, 'LogStream')
-    scrollToBottom()
+// 自动刷新
+watch(dwsAutoRefresh, (val) => {
+  if (val) {
+    dwsTimer = setInterval(fetchDeviceWSLogs, 3000)
+  } else if (dwsTimer) {
+    clearInterval(dwsTimer)
+    dwsTimer = null
   }
 })
+
+// ===== 通用 =====
+const onTabChange = (tab: string) => {
+  if (tab === 'devicews' && dwsLogs.value.length === 0) {
+    fetchDeviceWSLogs()
+  }
+}
+
+const clearCurrentLogs = () => {
+  if (activeTab.value === 'system') {
+    debugStore.clearLogs()
+  } else {
+    dwsLogs.value = []
+  }
+}
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -148,15 +175,43 @@ const scrollToBottom = () => {
   })
 }
 
-const clearLogs = () => {
-  debugStore.clearLogs()
+const toggleStreaming = () => {
+  if (isStreaming.value) {
+    isStreaming.value = false
+    send('stopLogStream')
+  } else {
+    isStreaming.value = true
+    send('startLogStream')
+  }
 }
 
 const downloadLogs = () => {
-  // 动态获取后端地址
   const host = window.location.hostname || '127.0.0.1'
   window.open(`http://${host}:1001/api/logs/download`, '_blank')
 }
+
+onMounted(() => {
+  if (!isConnected.value) connect()
+  if (isStreaming.value && isConnected.value) send('startLogStream')
+  // 默认加载设备日志
+  if (activeTab.value === 'devicews') fetchDeviceWSLogs()
+})
+
+watch(isConnected, (val) => {
+  if (val && isStreaming.value) send('startLogStream')
+})
+
+onMessage((res) => {
+  if (res.type === 'LogStream') {
+    debugStore.addLog('ws-push', res.data, 'LogStream')
+    if (activeTab.value === 'system') scrollToBottom()
+  }
+})
+
+onUnmounted(() => {
+  if (isStreaming.value && isConnected.value) send('stopLogStream')
+  if (dwsTimer) { clearInterval(dwsTimer); dwsTimer = null }
+})
 </script>
 
 <style scoped lang="scss">
@@ -172,7 +227,10 @@ const downloadLogs = () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  
+
+  :deep(.el-card__header) {
+    padding: 8px 16px;
+  }
   :deep(.el-card__body) {
     flex: 1;
     overflow: hidden;
@@ -186,6 +244,19 @@ const downloadLogs = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  :deep(.el-tabs) {
+    margin-bottom: 0;
+    .el-tabs__header { margin: 0; }
+    .el-tabs__nav-wrap::after { display: none; }
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .log-container {
@@ -205,6 +276,10 @@ const downloadLogs = () => {
   padding-bottom: 2px;
   margin-bottom: 2px;
   word-break: break-all;
+
+  &.log-error { color: #f56c6c; }
+  &.log-warn { color: #e6a23c; }
+  &.log-debug { color: #909399; }
 }
 
 .empty-logs {
@@ -213,7 +288,5 @@ const downloadLogs = () => {
   margin-top: 20px;
 }
 
-.mr-1 {
-  margin-right: 4px;
-}
+.mr-1 { margin-right: 4px; }
 </style>
