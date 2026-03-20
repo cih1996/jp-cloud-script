@@ -40,6 +40,54 @@ export const backendApi = {
         return await callUnified('getUserFiles', params || {})
     },
 
+    // 秒传检测
+    async fastUpload(hash: string, fileName: string) {
+        const res = await fetch(`${getBaseUrl()}/api/file/fast-upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hash, fileName })
+        })
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`)
+        const json = await res.json()
+        if (json.code !== 200) throw new Error(json.msg || '秒传检测失败')
+        return json.data
+    },
+
+    // 文件上传（代理到COS）
+    async uploadFile(file: File, hash: string, onProgress?: (percent: number) => void): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('hash', hash)
+            formData.append('fileName', file.name)
+
+            const xhr = new XMLHttpRequest()
+            xhr.open('POST', `${getBaseUrl()}/api/file/upload`)
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable && onProgress) {
+                    onProgress(Math.round((e.loaded / e.total) * 100))
+                }
+            }
+
+            xhr.onload = () => {
+                try {
+                    const json = JSON.parse(xhr.responseText)
+                    if (json.code !== 200) {
+                        reject(new Error(json.msg || '上传失败'))
+                    } else {
+                        resolve(json.data)
+                    }
+                } catch {
+                    reject(new Error('响应解析失败'))
+                }
+            }
+
+            xhr.onerror = () => reject(new Error('网络错误'))
+            xhr.send(formData)
+        })
+    },
+
     // 改机
     async changePhones(data: any[]) {
         return await callUnified('Changephones', data, { req: true })
