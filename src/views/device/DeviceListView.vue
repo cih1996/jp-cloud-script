@@ -1071,6 +1071,8 @@ watch(() => frontendWS.devices.value, (newDevices) => {
       // 更新字段但保留对象引用
       old.deviceInfo = nd.deviceInfo
       old.tbYunJiUserDeviceId = nd.tbYunJiUserDeviceId
+      old.wsConnected = (nd as any).wsConnected
+      old.middleAgentDevice = nd.middleAgentDevice
       old._local = nd._local
     } else {
       changed = true

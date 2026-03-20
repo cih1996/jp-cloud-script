@@ -515,8 +515,8 @@
              <!-- Network Check -->
              <template v-if="step.type === 'network_check'">
                <div class="ios-field">
-                 <label>目标网址</label>
-                 <el-input v-model="step.params.targetUrl" placeholder="https://www.baidu.com（留空默认百度）" :readonly="!isEditing" />
+                 <label>目标地址（IP）</label>
+                 <el-input v-model="step.params.targetUrl" placeholder="留空默认 ping 8.8.8.8 检测联网" :readonly="!isEditing" />
                </div>
                <div class="field-row">
                  <div class="ios-field half">
@@ -529,8 +529,8 @@
                  </div>
                </div>
                <div class="ios-hint">
-                 <p>改机重启后检测设备是否能正常上网</p>
-                 <p>通过 curl 访问目标网址，返回 HTTP 2xx/3xx 即为成功</p>
+                 <p>检测设备是否能正常连接互联网</p>
+                 <p>通过 ping IP 地址检测（默认 8.8.8.8），避免 DNS 未配置导致失败</p>
                </div>
              </template>
 

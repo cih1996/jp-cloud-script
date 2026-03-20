@@ -4,35 +4,35 @@
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
-          <span class="title">Cloud File Management</span>
+          <span class="title">云文件管理</span>
           <div class="header-actions">
             <el-button type="primary" @click="showUploadDialog = true">
-              <el-icon><Upload /></el-icon> Upload File
+              <el-icon><Upload /></el-icon> 上传文件
             </el-button>
-            <el-button @click="fetchFileList" :icon="Refresh">Refresh</el-button>
+            <el-button @click="fetchFileList" :icon="Refresh">刷新</el-button>
           </div>
         </div>
       </template>
 
       <el-table :data="fileList" style="width: 100%" v-loading="loading">
         <el-table-column prop="fileId" label="ID" width="100" />
-        <el-table-column prop="fileName" label="File Name" min-width="200" />
-        <el-table-column prop="size" label="Size" width="120">
+        <el-table-column prop="fileName" label="文件名" min-width="200" />
+        <el-table-column prop="size" label="大小" width="120">
           <template #default="scope">
             {{ formatSize(scope.row.size) }}
           </template>
         </el-table-column>
-        <el-table-column prop="addTime" label="Upload Time" width="180">
+        <el-table-column prop="addTime" label="上传时间" width="180">
           <template #default="scope">
             {{ formatDate(scope.row.addTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="Actions" width="200" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
-            <el-button link type="primary" @click="handleCopyLink(scope.row)">Copy Link</el-button>
+            <el-button link type="primary" @click="handleCopyLink(scope.row)">复制链接</el-button>
             <el-popconfirm title="确认删除该文件？" @confirm="handleDelete(scope.row)">
               <template #reference>
-                <el-button link type="danger">Delete</el-button>
+                <el-button link type="danger">删除</el-button>
               </template>
             </el-popconfirm>
           </template>
@@ -107,7 +107,7 @@ const fetchFileList = async () => {
     const res = await backendApi.getCloudFiles({});
     fileList.value = res || [];
   } catch (error: any) {
-    ElMessage.error('Failed to fetch file list: ' + error.message);
+    ElMessage.error('获取文件列表失败: ' + error.message);
   } finally {
     loading.value = false;
   }
@@ -185,12 +185,12 @@ const handleCopyLink = async (row: FileItem) => {
     const url = row.url || '';
     if (url) {
       await navigator.clipboard.writeText(url);
-      ElMessage.success('Link copied to clipboard');
+      ElMessage.success('链接已复制');
     } else {
-      ElMessage.warning('No download URL available');
+      ElMessage.warning('无下载链接');
     }
   } catch (error: any) {
-    ElMessage.error('Failed to copy link: ' + error.message);
+    ElMessage.error('复制链接失败: ' + error.message);
   }
 };
 
